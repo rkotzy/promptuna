@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Promptuna configuration file",
+  "type": "object",
+  "required": ["version", "providers", "prompts"],
+  "additionalProperties": false,
+
+  "properties": {
+    "version": { "type": "string" },
+
+    "providers": {
+      "type": "object",
+      "description": "Registry of model providers keyed by providerId.",
+      "propertyNames": { "$ref": "#/$defs/id" },
+      "additionalProperties": { "$ref": "#/$defs/provider" }
+    },
+
+    "responseSchemas": {
+      "type": "object",
+      "description": "Reusable JSON-Schema fragments keyed by schemaId.",
+      "propertyNames": { "$ref": "#/$defs/id" },
+      "additionalProperties": { "$ref": "#/$defs/jsonSchema" }
+    },
+
+    "prompts": {
+      "type": "object",
+      "description": "All logical prompts keyed by promptId.",
+      "propertyNames": { "$ref": "#/$defs/id" },
+      "additionalProperties": { "$ref": "#/$defs/prompt" }
+    }
+  },
+
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_-]+$"
+    },
+
+    "jsonSchema": {
+      "type": "object",
+      "description": "Any valid JSON-Schema fragment."
+    },
+
+    "provider": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": true,
+      "properties": {
+        "type": { "type": "string" },
+        "config": { "type": "object" }
+      }
+    },
+
+    "prompt": {
+      "type": "object",
+      "required": ["description", "variants", "routing"],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+
+        "variants": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/id" },
+          "additionalProperties": { "$ref": "#/$defs/variant" }
+        },
+
+        "routing": { "$ref": "#/$defs/routing" },
+
+        "chains": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/chainStep" }
+        }
+      }
+    },
+
+    "variant": {
+      "type": "object",
+      "required": ["provider", "model", "messages"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "$ref": "#/$defs/id" },
+        "model": { "type": "string" },
+
+        "parameters": { "$ref": "#/$defs/modelParams" },
+
+        "messages": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/message" }
+        },
+
+        "responseFormat": { "$ref": "#/$defs/responseFormat" },
+
+        "fallback": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/fallbackTarget" }
+        },
+
+        "logging": { "$ref": "#/$defs/logging" }
+      }
+    },
+
+    "modelParams": {
+      "type": "object",
+      "additionalProperties": { "type": ["number", "string", "boolean"] },
+      "properties": {
+        "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
+        "max_tokens": { "type": "integer", "minimum": 1 },
+        "top_p": { "type": "number", "minimum": 0, "maximum": 1 },
+        "frequency_penalty": { "type": "number" },
+        "presence_penalty": { "type": "number" },
+        "stop": {
+          "type": ["string", "array"],
+          "items": { "type": "string" }
+        },
+        "json_mode": { "type": "boolean" }
+      }
+    },
+
+    "message": {
+      "type": "object",
+      "required": ["role", "content"],
+      "additionalProperties": false,
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": ["system", "user", "assistant", "function"]
+        },
+        "content": {
+          "type": "object",
+          "required": ["template"],
+          "additionalProperties": false,
+          "properties": {
+            "template": { "type": "string" }
+          }
+        }
+      }
+    },
+
+    "responseFormat": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["json_schema", "raw_text", "xml", "markdown"]
+        },
+        "schemaRef": { "$ref": "#/$defs/id" }
+      }
+    },
+
+    "fallbackTarget": {
+      "type": "object",
+      "required": ["provider", "model"],
+      "additionalProperties": false,
+      "properties": {
+        "provider": { "$ref": "#/$defs/id" },
+        "model": { "type": "string" }
+      }
+    },
+
+    "logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["off", "minimal", "standard", "verbose"],
+          "default": "standard"
+        },
+        "sampleRate": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+
+    "routing": {
+      "type": "object",
+      "required": ["rules"],
+      "additionalProperties": false,
+      "properties": {
+        "rules": {
+          "type": "array",
+          "minItems": 1,
+          "contains": {
+            "anyOf": [
+              { "not": { "required": ["tags"] } },
+              {
+                "properties": { "tags": { "type": "array", "maxItems": 0 } },
+                "required": ["tags"]
+              },
+              {
+                "properties": {
+                  "tags": { "contains": { "const": "default" } }
+                },
+                "required": ["tags"]
+              }
+            ]
+          },
+          "items": { "$ref": "#/$defs/routingRule" }
+        },
+        "phased": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/phasedRule" }
+        }
+      }
+    },
+
+    "routingRule": {
+      "type": "object",
+      "required": ["target"],
+      "additionalProperties": false,
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Match if ANY tag is present; omit or [] for default."
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 100
+        },
+        "target": {
+          "type": "string",
+          "description": "variantId within this prompt."
+        }
+      }
+    },
+
+    "phasedRule": {
+      "type": "object",
+      "required": ["start", "weights"],
+      "additionalProperties": false,
+      "properties": {
+        "start": { "type": "string", "format": "date-time" },
+        "end": { "type": "string", "format": "date-time" },
+        "weights": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/id" },
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      }
+    },
+
+    "chainStep": {
+      "type": "object",
+      "required": ["prompt", "variant"],
+      "additionalProperties": false,
+      "properties": {
+        "prompt": { "$ref": "#/$defs/id" },
+        "variant": { "$ref": "#/$defs/id" },
+        "map": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Key mapping: downstreamVar ← JSON-path into prior step’s response."
+        }
+      }
+    }
+  }
+}

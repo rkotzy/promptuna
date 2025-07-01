@@ -1,0 +1,152 @@
+{
+  "version": "1.0.0",
+
+  "providers": {
+    "openai": {
+      "type": "openai"
+    },
+    "anthropic": {
+      "type": "anthropic"
+    }
+  },
+
+  "responseSchemas": {
+    "jsonGreeting": {
+      "type": "object",
+      "required": ["greeting"],
+      "properties": {
+        "greeting": { "type": "string" }
+      }
+    }
+  },
+
+  "prompts": {
+    "greeting": {
+      "description": "Generate a friendly greeting for a user.",
+
+      "variants": {
+        "v_default": {
+          "provider": "openai",
+          "model": "gpt-3.5-turbo",
+          "parameters": { "temperature": 0.7, "max_tokens": 100 },
+          "messages": [
+            {
+              "role": "system",
+              "content": { "template": "You are a helpful assistant." }
+            },
+            {
+              "role": "user",
+              "content": { "template": "Say hello to {{name}}!" }
+            }
+          ],
+          "responseFormat": {
+            "type": "json_schema",
+            "schemaRef": "jsonGreeting"
+          },
+          "fallback": [{ "provider": "anthropic", "model": "claude-3-sonnet" }]
+        },
+
+        "v_us": {
+          "provider": "openai",
+          "model": "gpt-4o-mini",
+          "parameters": { "temperature": 0.6, "max_tokens": 120 },
+          "messages": [
+            {
+              "role": "system",
+              "content": {
+                "template": "You are a helpful assistant that uses American English idioms."
+              }
+            },
+            {
+              "role": "user",
+              "content": {
+                "template": "Write a casual greeting for {{name}} from {{city}}."
+              }
+            }
+          ],
+          "responseFormat": {
+            "type": "json_schema",
+            "schemaRef": "jsonGreeting"
+          },
+          "fallback": [{ "provider": "anthropic", "model": "claude-3-sonnet" }]
+        },
+
+        "v_beta": {
+          "provider": "openai",
+          "model": "gpt-3.5-turbo",
+          "parameters": { "temperature": 0.8 },
+          "messages": [
+            {
+              "role": "system",
+              "content": { "template": "You are an experimental assistant." }
+            },
+            {
+              "role": "user",
+              "content": { "template": "Provide a fun greeting for {{name}}." }
+            }
+          ],
+          "responseFormat": {
+            "type": "json_schema",
+            "schemaRef": "jsonGreeting"
+          },
+          "fallback": [{ "provider": "anthropic", "model": "claude-3-sonnet" }]
+        }
+      },
+
+      "routing": {
+        "rules": [
+          { "tags": ["US"], "weight": 70, "target": "v_us" },
+          { "tags": ["beta"], "weight": 30, "target": "v_beta" },
+          { "target": "v_default" }
+        ],
+
+        "phased": [
+          {
+            "start": 1751328000,
+            "end": 1752537600,
+            "weights": { "v_us": 50, "v_default": 50 }
+          },
+          {
+            "start": 1752537600,
+            "weights": { "v_us": 100, "v_default": 0 }
+          }
+        ]
+      },
+
+      "chains": [
+        {
+          "prompt": "summary",
+          "variant": "v_default",
+          "map": { "summary_input": "greeting" }
+        }
+      ]
+    },
+
+    "summary": {
+      "description": "Summarize a greeting into one concise sentence.",
+
+      "variants": {
+        "v_default": {
+          "provider": "openai",
+          "model": "gpt-3.5-turbo",
+          "parameters": { "temperature": 0.3, "max_tokens": 60 },
+          "messages": [
+            {
+              "role": "system",
+              "content": { "template": "You are a concise summarizer." }
+            },
+            {
+              "role": "user",
+              "content": { "template": "Summarize: {{summary_input}}" }
+            }
+          ],
+          "responseFormat": { "type": "raw_text" }
+        }
+      },
+
+      "routing": {
+        "rules": [{ "target": "v_default" }]
+      }
+    }
+  }
+}

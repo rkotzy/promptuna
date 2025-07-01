@@ -94,9 +94,7 @@
         "fallback": {
           "type": "array",
           "items": { "$ref": "#/$defs/fallbackTarget" }
-        },
-
-        "logging": { "$ref": "#/$defs/logging" }
+        }
       }
     },
 
@@ -160,19 +158,6 @@
       }
     },
 
-    "logging": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "level": {
-          "type": "string",
-          "enum": ["off", "minimal", "standard", "verbose"],
-          "default": "standard"
-        },
-        "sampleRate": { "type": "number", "minimum": 0, "maximum": 1 }
-      }
-    },
-
     "routing": {
       "type": "object",
       "required": ["rules"],
@@ -233,8 +218,8 @@
       "required": ["start", "weights"],
       "additionalProperties": false,
       "properties": {
-        "start": { "type": "string", "format": "date-time" },
-        "end": { "type": "string", "format": "date-time" },
+        "start": { "type": "integer" },
+        "end": { "type": "integer" },
         "weights": {
           "type": "object",
           "propertyNames": { "$ref": "#/$defs/id" },

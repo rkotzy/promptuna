@@ -2,7 +2,7 @@ import Ajv from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 import { readFile } from "fs/promises";
 import { resolve, dirname } from "path";
-import { PromptunaConfig } from "../types/config";
+import { PromptunaConfig, ConfigurationError } from "../types/config";
 
 export interface ValidationResult {
   valid: boolean;
@@ -37,8 +37,12 @@ export class ConfigValidator {
       const schema = JSON.parse(schemaContent);
       this.validateFn = this.ajv.compile(schema);
     } catch (error) {
-      throw new Error(
-        `Failed to load schema from ${this.schemaPath}: ${error}`
+      throw new ConfigurationError(
+        `Failed to load schema from ${this.schemaPath}`,
+        {
+          schemaPath: this.schemaPath,
+          error: error instanceof Error ? error.message : error
+        }
       );
     }
   }
@@ -81,19 +85,29 @@ export class ConfigValidator {
 
       const validation = await this.validate(config);
       if (!validation.valid) {
-        const errorDetails =
-          validation.errors
-            ?.map((err) => `${err.path}: ${err.message}`)
-            .join(", ") || "Unknown validation errors";
-        throw new Error(`Invalid configuration: ${errorDetails}`);
+        throw new ConfigurationError(
+          `Configuration validation failed`,
+          {
+            configPath,
+            errors: validation.errors
+          }
+        );
       }
 
       return config as PromptunaConfig;
     } catch (error) {
-      if (error instanceof Error) {
-        throw error; // Re-throw validation errors as-is
+      if (error instanceof ConfigurationError) {
+        throw error; // Re-throw configuration errors as-is
       }
-      throw new Error(`Failed to read or parse config file: ${error}`);
+      
+      // Handle file reading and JSON parsing errors
+      throw new ConfigurationError(
+        `Failed to read or parse config file: ${configPath}`,
+        {
+          configPath,
+          error: error instanceof Error ? error.message : error
+        }
+      );
     }
   }
 }

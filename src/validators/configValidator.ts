@@ -2,6 +2,7 @@ import Ajv from "ajv/dist/2020";
 import addFormats from "ajv-formats";
 import { readFile } from "fs/promises";
 import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import { PromptunaConfig, ConfigurationError } from "../types/config";
 
 export interface ValidationResult {
@@ -28,7 +29,7 @@ export class ConfigValidator {
     });
     addFormats(this.ajv);
     // Schema is at the root of the project
-    this.schemaPath = resolve(dirname(__dirname), "..", "schema.json");
+    this.schemaPath = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "schema.json");
   }
 
   private async initializeValidator(): Promise<void> {

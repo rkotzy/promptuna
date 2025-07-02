@@ -6,16 +6,19 @@ import {
 
 export class GoogleProvider implements Provider {
   private genAI: any;
+  private apiKey: string;
 
   constructor(apiKey: string) {
-    this.initializeClient(apiKey);
+    this.apiKey = apiKey;
   }
 
-  private async initializeClient(apiKey: string) {
+  private async initializeClient() {
+    if (this.genAI) return;
+    
     try {
       // @ts-ignore - Optional dependency
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
-      this.genAI = new GoogleGenerativeAI(apiKey);
+      this.genAI = new GoogleGenerativeAI(this.apiKey);
     } catch (error: any) {
       if (
         error.code === 'MODULE_NOT_FOUND' ||
@@ -32,6 +35,8 @@ export class GoogleProvider implements Provider {
   async chatCompletion(
     options: ChatCompletionOptions
   ): Promise<ChatCompletionResponse> {
+    await this.initializeClient();
+    
     if (!this.genAI) {
       throw new Error('Google client not initialized');
     }

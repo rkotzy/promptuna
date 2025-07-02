@@ -6,16 +6,19 @@ import {
 
 export class OpenAIProvider implements Provider {
   private client: any;
+  private apiKey: string;
 
   constructor(apiKey: string) {
-    this.initializeClient(apiKey);
+    this.apiKey = apiKey;
   }
 
-  private async initializeClient(apiKey: string) {
+  private async initializeClient() {
+    if (this.client) return;
+    
     try {
       // @ts-ignore - Optional dependency
       const OpenAI = (await import('openai')).default;
-      this.client = new OpenAI({ apiKey });
+      this.client = new OpenAI({ apiKey: this.apiKey });
     } catch (error: any) {
       if (
         error.code === 'MODULE_NOT_FOUND' ||
@@ -32,6 +35,8 @@ export class OpenAIProvider implements Provider {
   async chatCompletion(
     options: ChatCompletionOptions
   ): Promise<ChatCompletionResponse> {
+    await this.initializeClient();
+    
     if (!this.client) {
       throw new Error('OpenAI client not initialized');
     }

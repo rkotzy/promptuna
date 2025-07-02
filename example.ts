@@ -77,12 +77,20 @@ async function main() {
           console.log(`  Tokens: ${response.usage.total_tokens} total`);
         }
       } catch (chatError) {
-        console.log(
-          "\n⚠️  Chat completion failed (this is expected if API keys aren't set):"
-        );
-        console.log(
-          `  ${chatError instanceof Error ? chatError.message : chatError}`
-        );
+        console.log('\n⚠️  Chat completion failed:');
+        console.log(`  Error: ${chatError instanceof Error ? chatError.message : chatError}`);
+        
+        // Log full error details for debugging
+        if (chatError instanceof Error) {
+          console.log(`  Error Name: ${chatError.name}`);
+          if ('code' in chatError) {
+            console.log(`  Error Code: ${(chatError as any).code}`);
+          }
+          if ('details' in chatError) {
+            console.log(`  Error Details:`, (chatError as any).details);
+          }
+          console.log(`  Stack Trace:`, chatError.stack);
+        }
       }
     } else {
       console.log('\n💡 To test chat completions, set environment variables:');

@@ -249,12 +249,21 @@ export class Promptuna {
     try {
       return await provider.chatCompletion(options);
     } catch (error: any) {
-      throw new ExecutionError(`Chat completion failed`, {
+      // Preserve original error information
+      const errorDetails = {
         promptId,
         variantId,
         provider: providerConfig.type,
-        error: error.message,
-      });
+        originalError: error.message,
+        errorType: error.constructor.name,
+        ...(error.code && { errorCode: error.code }),
+        ...(error.details && { providerDetails: error.details })
+      };
+
+      throw new ExecutionError(
+        `Chat completion failed for ${providerConfig.type}: ${error.message}`,
+        errorDetails
+      );
     }
   }
 }

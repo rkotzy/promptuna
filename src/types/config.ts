@@ -1,13 +1,8 @@
 export interface PromptunaConfig {
   version: string;
-  providers: Record<string, Provider>;
-  responseSchemas?: Record<string, JsonSchema>;
+  providers: Record<string, any>;
+  responseSchemas?: Record<string, any>;
   prompts: Record<string, any>;
-}
-
-export interface Provider {
-  type: 'openai' | 'anthropic' | 'google';
-  config?: Record<string, any>;
 }
 
 export interface PromptunaRuntimeConfig {
@@ -17,8 +12,42 @@ export interface PromptunaRuntimeConfig {
   googleApiKey?: string;
 }
 
-export interface JsonSchema {
-  [key: string]: any;
+export interface Variant {
+  provider: string;
+  model: string;
+  default?: boolean;
+  parameters?: ModelParams;
+  messages: Message[];
+  responseFormat?: ResponseFormat;
+  fallback?: FallbackTarget[];
+}
+
+export interface Message {
+  role: 'system' | 'user' | 'assistant';
+  content: {
+    template: string;
+  };
+}
+
+export interface ModelParams {
+  temperature?: number;
+  max_tokens?: number;
+  top_p?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
+  stop?: string | string[];
+  json_mode?: boolean;
+  [key: string]: number | string | boolean | string[] | undefined;
+}
+
+export interface ResponseFormat {
+  type: 'json_schema' | 'raw_text' | 'xml' | 'markdown';
+  schemaRef?: string;
+}
+
+export interface FallbackTarget {
+  provider: string;
+  model: string;
 }
 
 export interface RenderedMessage {

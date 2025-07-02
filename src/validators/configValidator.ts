@@ -3,7 +3,7 @@ import addFormats from 'ajv-formats';
 import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { PromptunaConfig, ConfigurationError } from '../types/config';
+import { PromptunaConfig, ConfigurationError, Variant } from '../types/config';
 
 export interface ValidationResult {
   valid: boolean;
@@ -81,6 +81,38 @@ export class ConfigValidator {
     return { valid: true };
   }
 
+  /**
+   * Validates that each prompt has exactly one default variant
+   * @private
+   */
+  private validateDefaultVariants(config: PromptunaConfig): void {
+    for (const [promptId, prompt] of Object.entries(config.prompts)) {
+      const defaultVariants = Object.entries(
+        (prompt as any).variants || {}
+      ).filter(([_, variant]) => (variant as Variant).default === true);
+
+      if (defaultVariants.length === 0) {
+        throw new ConfigurationError(
+          `Prompt "${promptId}" must have exactly one variant with default: true`,
+          {
+            promptId,
+            availableVariants: Object.keys(prompt.variants || {}),
+          }
+        );
+      }
+
+      if (defaultVariants.length > 1) {
+        throw new ConfigurationError(
+          `Prompt "${promptId}" has multiple default variants. Only one variant can have default: true`,
+          {
+            promptId,
+            defaultVariants: defaultVariants.map(([id]) => id),
+          }
+        );
+      }
+    }
+  }
+
   async validateAndLoadConfigFile(
     configPath: string
   ): Promise<PromptunaConfig> {
@@ -97,7 +129,11 @@ export class ConfigValidator {
         });
       }
 
-      return config as PromptunaConfig;
+      // Additional validation checks
+      const typedConfig = config as PromptunaConfig;
+      this.validateDefaultVariants(typedConfig);
+
+      return typedConfig;
     } catch (error) {
       if (error instanceof ConfigurationError) {
         throw error; // Re-throw configuration errors as-is

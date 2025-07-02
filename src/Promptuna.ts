@@ -5,6 +5,7 @@ import {
   PromptunaRuntimeConfig,
   RenderedMessage,
   ExecutionError,
+  Variant,
 } from './types/config';
 import { TemplateProcessor } from './processors/templateProcessor';
 import {
@@ -68,38 +69,47 @@ export class Promptuna {
   }
 
   /**
-   * Gets a variant template with variables interpolated
+   * Gets a template with variables interpolated
    * @param promptId The ID of the prompt
-   * @param variantId The ID of the variant within the prompt
+   * @param variantId The ID of the variant within the prompt (optional - uses default if not provided)
    * @param variables Variables to interpolate into the template
    * @returns Array of rendered messages with content ready for LLM
    * @throws ExecutionError if prompt/variant not found or invalid message format
    * @throws TemplateError if template processing fails
    */
-  async getVariantTemplate(
+  async getTemplate(
     promptId: string,
-    variantId: string,
-    variables: Record<string, any>
+    variantId?: string,
+    variables?: Record<string, any>
   ): Promise<RenderedMessage[]> {
     const config = await this.getConfig();
 
-    // Find the prompt
-    const prompt = config.prompts[promptId];
-    if (!prompt) {
-      throw new ExecutionError(`Prompt not found`, {
-        promptId,
-        availablePrompts: Object.keys(config.prompts),
-      });
-    }
+    let variant: Variant;
+    let selectedVariantId = variantId;
 
-    // Find the variant
-    const variant = prompt.variants?.[variantId];
-    if (!variant) {
-      throw new ExecutionError(`Variant not found`, {
-        promptId,
-        variantId,
-        availableVariants: Object.keys(prompt.variants || {}),
-      });
+    if (!selectedVariantId) {
+      // Use both the ID and variant from findDefaultVariant
+      const [defaultVariantId, defaultVariant] = await this.findDefaultVariant(promptId);
+      selectedVariantId = defaultVariantId;
+      variant = defaultVariant;
+    } else {
+      // Only fetch variant when we have a specific variantId
+      const prompt = config.prompts[promptId];
+      if (!prompt) {
+        throw new ExecutionError(`Prompt not found`, {
+          promptId,
+          availablePrompts: Object.keys(config.prompts),
+        });
+      }
+
+      variant = prompt.variants?.[selectedVariantId] as Variant;
+      if (!variant) {
+        throw new ExecutionError(`Variant not found`, {
+          promptId,
+          variantId: selectedVariantId,
+          availableVariants: Object.keys(prompt.variants || {}),
+        });
+      }
     }
 
     // Process all messages in the variant
@@ -107,7 +117,7 @@ export class Promptuna {
     if (!Array.isArray(messages)) {
       throw new ExecutionError(`Invalid messages format in variant`, {
         promptId,
-        variantId,
+        variantId: selectedVariantId,
         messagesType: typeof messages,
       });
     }
@@ -118,7 +128,7 @@ export class Promptuna {
       if (!message.role || !message.content?.template) {
         throw new ExecutionError(`Invalid message format in variant`, {
           promptId,
-          variantId,
+          variantId: selectedVariantId,
           messageStructure: {
             hasRole: !!message.role,
             hasContent: !!message.content,
@@ -129,7 +139,7 @@ export class Promptuna {
 
       const renderedContent = await this.templateProcessor.processTemplate(
         message.content.template,
-        variables
+        variables || {}
       );
 
       renderedMessages.push({
@@ -139,6 +149,40 @@ export class Promptuna {
     }
 
     return renderedMessages;
+  }
+
+  /**
+   * Finds the default variant for a given prompt
+   * @private
+   * @param promptId The ID of the prompt
+   * @returns A tuple of [variantId, variant] for the default variant
+   * @throws ExecutionError if prompt not found or no default variant exists
+   */
+  private async findDefaultVariant(promptId: string): Promise<[string, Variant]> {
+    const config = await this.getConfig();
+    
+    // Find the prompt
+    const prompt = config.prompts[promptId];
+    if (!prompt) {
+      throw new ExecutionError(`Prompt not found`, {
+        promptId,
+        availablePrompts: Object.keys(config.prompts),
+      });
+    }
+
+    // Find the default variant
+    const defaultVariantEntry = Object.entries(prompt.variants || {}).find(
+      ([_, variant]) => (variant as Variant).default === true
+    );
+    
+    if (!defaultVariantEntry) {
+      throw new ExecutionError(`No default variant found for prompt`, {
+        promptId,
+        availableVariants: Object.keys(prompt.variants || {}),
+      });
+    }
+    
+    return [defaultVariantEntry[0], defaultVariantEntry[1] as Variant];
   }
 
   /**
@@ -179,44 +223,27 @@ export class Promptuna {
   }
 
   /**
-   * Executes a chat completion using the specified variant
+   * Execute chat completion for a prompt (uses default variant)
    * @param promptId The ID of the prompt
-   * @param variantId The ID of the variant within the prompt
    * @param variables Variables to interpolate into the template
    * @returns The chat completion response from the LLM provider
-   * @throws ExecutionError if prompt/variant not found or provider fails
+   * @throws ExecutionError if prompt not found or provider fails
    */
   async chatCompletion(
     promptId: string,
-    variantId: string,
-    variables: Record<string, any>
+    variables?: Record<string, any>
   ): Promise<ChatCompletionResponse> {
     const config = await this.getConfig();
 
+    // Find the default variant
+    const [variantId, variant] = await this.findDefaultVariant(promptId);
+
     // Get the rendered messages
-    const messages = await this.getVariantTemplate(
+    const messages = await this.getTemplate(
       promptId,
       variantId,
       variables
-    );
-
-    // Find the variant configuration
-    const prompt = config.prompts[promptId];
-    if (!prompt) {
-      throw new ExecutionError(`Prompt not found`, {
-        promptId,
-        availablePrompts: Object.keys(config.prompts),
-      });
-    }
-
-    const variant = prompt.variants?.[variantId];
-    if (!variant) {
-      throw new ExecutionError(`Variant not found`, {
-        promptId,
-        variantId,
-        availableVariants: Object.keys(prompt.variants || {}),
-      });
-    }
+    )
 
     // Get the provider configuration
     const providerConfig = config.providers[variant.provider];
@@ -243,7 +270,7 @@ export class Promptuna {
       messages: chatMessages,
       model: variant.model,
       temperature: variant.parameters?.temperature,
-      max_tokens: variant.parameters?.maxTokens,
+      max_tokens: variant.parameters?.max_tokens,
     };
 
     try {

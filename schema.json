@@ -68,7 +68,8 @@
         "variants": {
           "type": "object",
           "propertyNames": { "$ref": "#/$defs/id" },
-          "additionalProperties": { "$ref": "#/$defs/variant" }
+          "additionalProperties": { "$ref": "#/$defs/variant" },
+          "$comment": "Exactly one variant must have default: true"
         },
 
         "routing": { "$ref": "#/$defs/routing" },
@@ -87,6 +88,11 @@
       "properties": {
         "provider": { "$ref": "#/$defs/id" },
         "model": { "type": "string" },
+
+        "default": {
+          "type": "boolean",
+          "description": "Whether this is the default variant for the prompt"
+        },
 
         "parameters": { "$ref": "#/$defs/modelParams" },
 
@@ -129,7 +135,7 @@
       "properties": {
         "role": {
           "type": "string",
-          "enum": ["system", "user", "assistant", "function"]
+          "enum": ["system", "user", "assistant"]
         },
         "content": {
           "type": "object",
@@ -173,21 +179,6 @@
         "rules": {
           "type": "array",
           "minItems": 1,
-          "contains": {
-            "anyOf": [
-              { "not": { "required": ["tags"] } },
-              {
-                "properties": { "tags": { "type": "array", "maxItems": 0 } },
-                "required": ["tags"]
-              },
-              {
-                "properties": {
-                  "tags": { "contains": { "const": "default" } }
-                },
-                "required": ["tags"]
-              }
-            ]
-          },
           "items": { "$ref": "#/$defs/routingRule" }
         },
         "phased": {
@@ -205,7 +196,7 @@
         "tags": {
           "type": "array",
           "items": { "type": "string" },
-          "description": "Match if ANY tag is present; omit or [] for default."
+          "description": "Match if ANY tag is present."
         },
         "weight": {
           "type": "number",

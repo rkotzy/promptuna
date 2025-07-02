@@ -22,11 +22,11 @@ async function main() {
     // Demonstrate template processing
     console.log('\n--- Template Processing Demo ---');
 
-    // Simple variable example
+    // Simple variable example - uses default variant
     const simpleVariables = { name: 'Alice' };
-    const simpleMessages = await promptuna.getVariantTemplate(
+    const simpleMessages = await promptuna.getTemplate(
       'greeting',
-      'v_default',
+      undefined, // Uses default variant
       simpleVariables
     );
 
@@ -48,9 +48,9 @@ async function main() {
       },
     };
 
-    const complexMessages = await promptuna.getVariantTemplate(
+    const complexMessages = await promptuna.getTemplate(
       'greeting',
-      'v_us',
+      'v_us', // Specific variant
       complexVariables
     );
 
@@ -66,8 +66,7 @@ async function main() {
       try {
         const response = await promptuna.chatCompletion(
           'greeting',
-          'v_default',
-          { name: 'Alice' }
+          complexVariables // Uses default variant automatically
         );
 
         console.log('\n🔹 Chat completion response:');
@@ -78,8 +77,10 @@ async function main() {
         }
       } catch (chatError) {
         console.log('\n⚠️  Chat completion failed:');
-        console.log(`  Error: ${chatError instanceof Error ? chatError.message : chatError}`);
-        
+        console.log(
+          `  Error: ${chatError instanceof Error ? chatError.message : chatError}`
+        );
+
         // Log full error details for debugging
         if (chatError instanceof Error) {
           console.log(`  Error Name: ${chatError.name}`);

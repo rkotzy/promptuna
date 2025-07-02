@@ -10,6 +10,7 @@ A TypeScript SDK for LLM prompt management with multi-provider support using a c
 - **Type-Safe**: Full TypeScript support with proper type definitions
 - **Secure**: API keys provided at runtime, never stored in configuration files
 - **Lightweight**: Install only the provider SDKs you need
+- **Observability Hook**: Capture rich telemetry for every request via a simple callback
 
 ## Installation
 
@@ -35,6 +36,7 @@ npm install @google/generative-ai
 ### Supported Versions
 
 Promptuna is tested with these provider SDK versions:
+
 - `openai`: ^4.0.0
 - `@anthropic-ai/sdk`: ^0.24.0
 - `@google/generative-ai`: ^0.15.0
@@ -104,19 +106,20 @@ async function main() {
     configPath: './config.json',
     openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    googleApiKey: process.env.GOOGLE_API_KEY,
+    onObservability: console.log,
   });
 
   try {
     // Generate a chat completion
     const response = await promptuna.chatCompletion(
-      'greeting',        // Prompt ID
-      'gpt4',           // Variant ID
-      { name: 'Alice' }  // Template variables
+      'greeting', // Prompt ID
+      'gpt4', // Variant ID
+      { name: 'Alice' } // Template variables
     );
 
     console.log(response.choices[0].message.content);
     // Output: "Hello Alice! How can I help you today?"
-
   } catch (error) {
     console.error('Error:', error.message);
   }
@@ -134,10 +137,12 @@ new Promptuna(config: PromptunaRuntimeConfig)
 ```
 
 **PromptunaRuntimeConfig:**
+
 - `configPath: string` - Path to your JSON configuration file
 - `openaiApiKey?: string` - OpenAI API key (optional)
 - `anthropicApiKey?: string` - Anthropic API key (optional)
 - `googleApiKey?: string` - Google API key (optional)
+- `onObservability?: (event: PromptunaObservability) => void` – Callback invoked with telemetry for each call
 
 ### Methods
 
@@ -147,9 +152,9 @@ Execute a chat completion using the specified prompt variant.
 
 ```typescript
 const response = await promptuna.chatCompletion(
-  'greeting',           // Prompt ID from config
-  'gpt4',              // Variant ID from config  
-  { name: 'Alice' }     // Variables for template interpolation
+  'greeting', // Prompt ID from config
+  'gpt4', // Variant ID from config
+  { name: 'Alice' } // Variables for template interpolation
 );
 ```
 
@@ -158,11 +163,9 @@ const response = await promptuna.chatCompletion(
 Get rendered messages without making an API call (useful for testing templates).
 
 ```typescript
-const messages = await promptuna.getVariantTemplate(
-  'greeting',
-  'gpt4', 
-  { name: 'Alice' }
-);
+const messages = await promptuna.getVariantTemplate('greeting', 'gpt4', {
+  name: 'Alice',
+});
 // Returns: [{ role: 'system', content: '...' }, { role: 'user', content: 'Say hello to Alice!' }]
 ```
 
@@ -185,12 +188,23 @@ const promptuna = new Promptuna({
   openaiApiKey: process.env.OPENAI_API_KEY,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   googleApiKey: process.env.GOOGLE_API_KEY,
+  onObservability: console.log,
 });
 
 // Use different providers for the same prompt
-const gptResponse = await promptuna.chatCompletion('summary', 'gpt4-variant', { text: 'Long text...' });
-const claudeResponse = await promptuna.chatCompletion('summary', 'claude-variant', { text: 'Long text...' });
-const geminiResponse = await promptuna.chatCompletion('summary', 'gemini-variant', { text: 'Long text...' });
+const gptResponse = await promptuna.chatCompletion('summary', 'gpt4-variant', {
+  text: 'Long text...',
+});
+const claudeResponse = await promptuna.chatCompletion(
+  'summary',
+  'claude-variant',
+  { text: 'Long text...' }
+);
+const geminiResponse = await promptuna.chatCompletion(
+  'summary',
+  'gemini-variant',
+  { text: 'Long text...' }
+);
 ```
 
 ## Configuration
@@ -278,7 +292,7 @@ Promptuna uses the Liquid template engine for variable interpolation:
 ```typescript
 const response = await promptuna.chatCompletion('greeting', 'variant', {
   name: 'Alice',
-  date: '2024-01-15'
+  date: '2024-01-15',
 });
 ```
 
@@ -347,6 +361,7 @@ Error: OpenAI SDK not installed. Please run: npm install openai
 ```
 
 **Solution:** Install the required provider SDK:
+
 ```bash
 npm install openai  # or @anthropic-ai/sdk or @google/generative-ai
 ```
@@ -358,6 +373,7 @@ Error: OpenAI API key not provided in configuration
 ```
 
 **Solution:** Set the API key as an environment variable or pass it to the constructor:
+
 ```bash
 export OPENAI_API_KEY="your-key"
 ```
@@ -367,7 +383,7 @@ export OPENAI_API_KEY="your-key"
 If you see peer dependency warnings, make sure you're using compatible provider SDK versions:
 
 - OpenAI: ^4.0.0
-- Anthropic: ^0.24.0  
+- Anthropic: ^0.24.0
 - Google: ^0.15.0
 
 ## License

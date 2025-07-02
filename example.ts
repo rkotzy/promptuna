@@ -7,6 +7,10 @@ async function main() {
     configPath: './promptuna-example.json',
     openaiApiKey: process.env.OPENAI_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    onObservability: event => {
+      console.log('\n📊 Observability Event');
+      console.log(JSON.stringify(event, null, 2));
+    },
   });
 
   try {

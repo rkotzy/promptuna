@@ -10,6 +10,10 @@ export interface PromptunaRuntimeConfig {
   openaiApiKey?: string;
   anthropicApiKey?: string;
   googleApiKey?: string;
+  environment?: 'dev' | 'prod';
+  onObservability?: (
+    event: import('./observability').PromptunaObservability
+  ) => void;
 }
 
 export interface Variant {

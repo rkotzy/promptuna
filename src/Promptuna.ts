@@ -1,4 +1,6 @@
 import { resolve } from 'path';
+import packageJson from '../package.json';
+import type { PromptunaObservability } from './types/observability';
 import { ConfigValidator } from './validators/configValidator';
 import {
   PromptunaConfig,
@@ -16,6 +18,7 @@ import {
 import { OpenAIProvider } from './providers/openai';
 import { AnthropicProvider } from './providers/anthropic';
 import { GoogleProvider } from './providers/google';
+import { ObservabilityBuilder } from './utils/observabilityBuilder';
 
 export class Promptuna {
   private configPath: string;
@@ -26,11 +29,21 @@ export class Promptuna {
   private providers: Map<string, any> = new Map();
   private runtimeConfig: PromptunaRuntimeConfig;
 
+  // Observability helpers
+  private sdkVersion: string;
+  private environment: 'dev' | 'prod';
+  private emitObservability?: (event: PromptunaObservability) => void;
+
   constructor(config: PromptunaRuntimeConfig) {
     this.runtimeConfig = config;
     this.configPath = resolve(config.configPath);
     this.validator = new ConfigValidator();
     this.templateProcessor = new TemplateProcessor();
+
+    this.sdkVersion = (packageJson as any).version ?? 'unknown';
+
+    this.environment = config.environment ?? 'dev';
+    this.emitObservability = config.onObservability;
   }
 
   /**
@@ -89,7 +102,8 @@ export class Promptuna {
 
     if (!selectedVariantId) {
       // Use both the ID and variant from findDefaultVariant
-      const [defaultVariantId, defaultVariant] = await this.findDefaultVariant(promptId);
+      const [defaultVariantId, defaultVariant] =
+        await this.findDefaultVariant(promptId);
       selectedVariantId = defaultVariantId;
       variant = defaultVariant;
     } else {
@@ -158,9 +172,11 @@ export class Promptuna {
    * @returns A tuple of [variantId, variant] for the default variant
    * @throws ExecutionError if prompt not found or no default variant exists
    */
-  private async findDefaultVariant(promptId: string): Promise<[string, Variant]> {
+  private async findDefaultVariant(
+    promptId: string
+  ): Promise<[string, Variant]> {
     const config = await this.getConfig();
-    
+
     // Find the prompt
     const prompt = config.prompts[promptId];
     if (!prompt) {
@@ -174,14 +190,14 @@ export class Promptuna {
     const defaultVariantEntry = Object.entries(prompt.variants || {}).find(
       ([_, variant]) => (variant as Variant).default === true
     );
-    
+
     if (!defaultVariantEntry) {
       throw new ExecutionError(`No default variant found for prompt`, {
         promptId,
         availableVariants: Object.keys(prompt.variants || {}),
       });
     }
-    
+
     return [defaultVariantEntry[0], defaultVariantEntry[1] as Variant];
   }
 
@@ -233,62 +249,88 @@ export class Promptuna {
     promptId: string,
     variables?: Record<string, any>
   ): Promise<ChatCompletionResponse> {
-    const config = await this.getConfig();
-
-    // Find the default variant
-    const [variantId, variant] = await this.findDefaultVariant(promptId);
-
-    // Get the rendered messages
-    const messages = await this.getTemplate(
+    const obsBuilder = new ObservabilityBuilder({
+      sdkVersion: this.sdkVersion,
+      environment: this.environment,
       promptId,
-      variantId,
-      variables
-    )
+      routingReason: 'default',
+      emit: this.emitObservability,
+    });
 
-    // Get the provider configuration
-    const providerConfig = config.providers[variant.provider];
-    if (!providerConfig) {
-      throw new ExecutionError(`Provider configuration not found`, {
-        promptId,
-        variantId,
-        providerId: variant.provider,
-        availableProviders: Object.keys(config.providers),
-      });
-    }
-
-    // Get the provider instance
-    const provider = this.getProvider(providerConfig.type);
-
-    // Transform messages to provider format
-    const chatMessages: ChatMessage[] = messages.map(msg => ({
-      role: msg.role,
-      content: msg.content,
-    }));
-
-    // Prepare options for chat completion
-    const options: ChatCompletionOptions = {
-      messages: chatMessages,
-      model: variant.model,
-      temperature: variant.parameters?.temperature,
-      max_tokens: variant.parameters?.max_tokens,
-    };
+    // Will be filled once known so we can use in error path
+    let variantId: string | 'unknown' = 'unknown';
+    let providerConfig: any;
 
     try {
-      return await provider.chatCompletion(options);
+      const config = await this.getConfig();
+
+      // Find the default variant
+      const [variantId, variant] = await this.findDefaultVariant(promptId);
+
+      // Update builder with variant
+      obsBuilder.setVariantId(variantId);
+
+      const messages = await this.getTemplate(promptId, variantId, variables);
+
+      obsBuilder.markTemplate();
+
+      // Get the provider configuration
+      providerConfig = config.providers[variant.provider];
+      if (!providerConfig) {
+        throw new ExecutionError(`Provider configuration not found`, {
+          promptId,
+          variantId,
+          providerId: variant.provider,
+          availableProviders: Object.keys(config.providers),
+        });
+      }
+
+      // Get the provider instance
+      const provider = this.getProvider(providerConfig.type);
+
+      // record provider details before call
+      obsBuilder.setProvider(providerConfig.type, variant.model);
+
+      // Transform messages to provider format
+      const chatMessages: ChatMessage[] = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      // Prepare options for chat completion
+      const options: ChatCompletionOptions = {
+        messages: chatMessages,
+        model: variant.model,
+        temperature: variant.parameters?.temperature,
+        max_tokens: variant.parameters?.max_tokens,
+      };
+
+      const response = await provider.chatCompletion(options);
+
+      // Success telemetry
+      obsBuilder.markProvider();
+      obsBuilder.setProviderRequestId(response.id);
+      obsBuilder.setTokenUsage(response.usage);
+      obsBuilder.buildSuccess();
+
+      return response;
     } catch (error: any) {
+      obsBuilder.markProvider();
+      obsBuilder.buildError(error);
+
       // Preserve original error information
       const errorDetails = {
         promptId,
         variantId,
-        provider: providerConfig.type,
-        originalError: error.message,
-        errorType: error.constructor.name,
-        ...(error.code && { errorCode: error.code }),
-        ...(error.details && { providerDetails: error.details })
+        provider: providerConfig?.type ?? 'unknown',
+        originalError: error instanceof Error ? error.message : String(error),
+        errorType: error?.constructor?.name ?? 'Error',
+        ...(error?.code && { errorCode: error.code }),
+        ...(error?.details && { providerDetails: error.details }),
       };
 
       throw new ExecutionError(
-        `Chat completion failed for ${providerConfig.type}: ${error.message}`,
+        `Chat completion failed for ${providerConfig?.type ?? 'provider'}: ${error instanceof Error ? error.message : String(error)}`,
         errorDetails
       );
     }

@@ -81,38 +81,6 @@ export class ConfigValidator {
     return { valid: true };
   }
 
-  /**
-   * Validates that each prompt has exactly one default variant
-   * @private
-   */
-  private validateDefaultVariants(config: PromptunaConfig): void {
-    for (const [promptId, prompt] of Object.entries(config.prompts)) {
-      const defaultVariants = Object.entries(
-        (prompt as any).variants || {}
-      ).filter(([_, variant]) => (variant as Variant).default === true);
-
-      if (defaultVariants.length === 0) {
-        throw new ConfigurationError(
-          `Prompt "${promptId}" must have exactly one variant with default: true`,
-          {
-            promptId,
-            availableVariants: Object.keys(prompt.variants || {}),
-          }
-        );
-      }
-
-      if (defaultVariants.length > 1) {
-        throw new ConfigurationError(
-          `Prompt "${promptId}" has multiple default variants. Only one variant can have default: true`,
-          {
-            promptId,
-            defaultVariants: defaultVariants.map(([id]) => id),
-          }
-        );
-      }
-    }
-  }
-
   async validateAndLoadConfigFile(
     configPath: string
   ): Promise<PromptunaConfig> {
@@ -147,6 +115,43 @@ export class ConfigValidator {
           error: error instanceof Error ? error.message : error,
         }
       );
+    }
+  }
+
+  /** ----------------------------------------------------------
+   *  Validation helpers
+   * ----------------------------------------------------------
+   */
+
+  /**
+   * Validates that each prompt has exactly one default variant
+   * @private
+   */
+  private validateDefaultVariants(config: PromptunaConfig): void {
+    for (const [promptId, prompt] of Object.entries(config.prompts)) {
+      const defaultVariants = Object.entries(
+        (prompt as any).variants || {}
+      ).filter(([_, variant]) => (variant as Variant).default === true);
+
+      if (defaultVariants.length === 0) {
+        throw new ConfigurationError(
+          `Prompt "${promptId}" must have exactly one variant with default: true`,
+          {
+            promptId,
+            availableVariants: Object.keys(prompt.variants || {}),
+          }
+        );
+      }
+
+      if (defaultVariants.length > 1) {
+        throw new ConfigurationError(
+          `Prompt "${promptId}" has multiple default variants. Only one variant can have default: true`,
+          {
+            promptId,
+            defaultVariants: defaultVariants.map(([id]) => id),
+          }
+        );
+      }
     }
   }
 }

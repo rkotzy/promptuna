@@ -22,32 +22,36 @@ export interface JsonSchema {
 }
 
 export interface RenderedMessage {
-  role: "system" | "user" | "assistant";
+  role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
 // Error types for better error handling
 export class PromptunaError extends Error {
-  constructor(message: string, public code: string, public details?: any) {
+  constructor(
+    message: string,
+    public code: string,
+    public details?: any
+  ) {
     super(message);
-    this.name = "PromptunaError";
+    this.name = 'PromptunaError';
   }
 }
 
 export class ConfigurationError extends PromptunaError {
   constructor(message: string, details?: any) {
-    super(message, "CONFIGURATION_ERROR", details);
+    super(message, 'CONFIGURATION_ERROR', details);
   }
 }
 
 export class ExecutionError extends PromptunaError {
   constructor(message: string, details?: any) {
-    super(message, "EXECUTION_ERROR", details);
+    super(message, 'EXECUTION_ERROR', details);
   }
 }
 
 export class TemplateError extends PromptunaError {
   constructor(message: string, details?: any) {
-    super(message, "TEMPLATE_ERROR", details);
+    super(message, 'TEMPLATE_ERROR', details);
   }
 }

@@ -1,4 +1,8 @@
-import { Provider, ChatCompletionOptions, ChatCompletionResponse } from './types';
+import {
+  Provider,
+  ChatCompletionOptions,
+  ChatCompletionResponse,
+} from './types';
 
 export class OpenAIProvider implements Provider {
   private client: any;
@@ -13,14 +17,21 @@ export class OpenAIProvider implements Provider {
       const OpenAI = (await import('openai')).default;
       this.client = new OpenAI({ apiKey });
     } catch (error: any) {
-      if (error.code === 'MODULE_NOT_FOUND' || error.message?.includes('Cannot find module')) {
-        throw new Error('OpenAI SDK not installed. Please run: npm install openai');
+      if (
+        error.code === 'MODULE_NOT_FOUND' ||
+        error.message?.includes('Cannot find module')
+      ) {
+        throw new Error(
+          'OpenAI SDK not installed. Please run: npm install openai'
+        );
       }
       throw error;
     }
   }
 
-  async chatCompletion(options: ChatCompletionOptions): Promise<ChatCompletionResponse> {
+  async chatCompletion(
+    options: ChatCompletionOptions
+  ): Promise<ChatCompletionResponse> {
     if (!this.client) {
       throw new Error('OpenAI client not initialized');
     }
@@ -44,11 +55,13 @@ export class OpenAIProvider implements Provider {
           finish_reason: choice.finish_reason,
           index: choice.index,
         })),
-        usage: response.usage ? {
-          prompt_tokens: response.usage.prompt_tokens,
-          completion_tokens: response.usage.completion_tokens,
-          total_tokens: response.usage.total_tokens,
-        } : undefined,
+        usage: response.usage
+          ? {
+              prompt_tokens: response.usage.prompt_tokens,
+              completion_tokens: response.usage.completion_tokens,
+              total_tokens: response.usage.total_tokens,
+            }
+          : undefined,
       };
     } catch (error: any) {
       throw new Error(`OpenAI API error: ${error.message}`);

@@ -1,5 +1,5 @@
-import { Liquid } from "liquidjs";
-import { TemplateError } from "../types/config";
+import { Liquid } from 'liquidjs';
+import { TemplateError } from '../types/config';
 
 export class TemplateProcessor {
   private liquid: Liquid;
@@ -37,48 +37,48 @@ export class TemplateProcessor {
 
   private registerCustomFilters(): void {
     // Join array with separator
-    this.liquid.registerFilter("join", (array: any[], separator = ", ") => {
+    this.liquid.registerFilter('join', (array: any[], separator = ', ') => {
       if (!Array.isArray(array)) return array;
       return array.join(separator);
     });
 
     // Number list items (1-indexed)
-    this.liquid.registerFilter("numbered", (array: any[], prefix = "  ") => {
+    this.liquid.registerFilter('numbered', (array: any[], prefix = '  ') => {
       if (!Array.isArray(array)) return array;
       return array.map((item, index) => `${prefix}${index + 1}. ${item}`);
     });
 
     // Default value filter
-    this.liquid.registerFilter("default", (value: any, defaultValue: any) => {
-      return value !== null && value !== undefined && value !== ""
+    this.liquid.registerFilter('default', (value: any, defaultValue: any) => {
+      return value !== null && value !== undefined && value !== ''
         ? value
         : defaultValue;
     });
 
     // Capitalize first letter
-    this.liquid.registerFilter("capitalize", (str: string) => {
-      if (typeof str !== "string") return str;
+    this.liquid.registerFilter('capitalize', (str: string) => {
+      if (typeof str !== 'string') return str;
       return str.charAt(0).toUpperCase() + str.slice(1);
     });
 
     // Convert to lowercase
-    this.liquid.registerFilter("downcase", (str: string) => {
-      if (typeof str !== "string") return str;
+    this.liquid.registerFilter('downcase', (str: string) => {
+      if (typeof str !== 'string') return str;
       return str.toLowerCase();
     });
 
     // Convert to uppercase
-    this.liquid.registerFilter("upcase", (str: string) => {
-      if (typeof str !== "string") return str;
+    this.liquid.registerFilter('upcase', (str: string) => {
+      if (typeof str !== 'string') return str;
       return str.toUpperCase();
     });
 
     // Size/length filter
-    this.liquid.registerFilter("size", (value: any) => {
-      if (Array.isArray(value) || typeof value === "string") {
+    this.liquid.registerFilter('size', (value: any) => {
+      if (Array.isArray(value) || typeof value === 'string') {
         return value.length;
       }
-      if (typeof value === "object" && value !== null) {
+      if (typeof value === 'object' && value !== null) {
         return Object.keys(value).length;
       }
       return 0;

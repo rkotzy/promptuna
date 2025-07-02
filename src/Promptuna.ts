@@ -1,20 +1,20 @@
-import { resolve } from "path";
-import { ConfigValidator } from "./validators/configValidator";
+import { resolve } from 'path';
+import { ConfigValidator } from './validators/configValidator';
 import {
   PromptunaConfig,
   PromptunaRuntimeConfig,
   RenderedMessage,
   ExecutionError,
-} from "./types/config";
-import { TemplateProcessor } from "./processors/templateProcessor";
+} from './types/config';
+import { TemplateProcessor } from './processors/templateProcessor';
 import {
   ChatCompletionOptions,
   ChatCompletionResponse,
   ChatMessage,
-} from "./providers/types";
-import { OpenAIProvider } from "./providers/openai";
-import { AnthropicProvider } from "./providers/anthropic";
-import { GoogleProvider } from "./providers/google";
+} from './providers/types';
+import { OpenAIProvider } from './providers/openai';
+import { AnthropicProvider } from './providers/anthropic';
+import { GoogleProvider } from './providers/google';
 
 export class Promptuna {
   private configPath: string;
@@ -152,21 +152,21 @@ export class Promptuna {
 
     let provider;
     switch (type) {
-      case "openai":
+      case 'openai':
         if (!this.runtimeConfig.openaiApiKey) {
-          throw new Error("OpenAI API key not provided in configuration");
+          throw new Error('OpenAI API key not provided in configuration');
         }
         provider = new OpenAIProvider(this.runtimeConfig.openaiApiKey);
         break;
-      case "anthropic":
+      case 'anthropic':
         if (!this.runtimeConfig.anthropicApiKey) {
-          throw new Error("Anthropic API key not provided in configuration");
+          throw new Error('Anthropic API key not provided in configuration');
         }
         provider = new AnthropicProvider(this.runtimeConfig.anthropicApiKey);
         break;
-      case "google":
+      case 'google':
         if (!this.runtimeConfig.googleApiKey) {
-          throw new Error("Google API key not provided in configuration");
+          throw new Error('Google API key not provided in configuration');
         }
         provider = new GoogleProvider(this.runtimeConfig.googleApiKey);
         break;
@@ -233,7 +233,7 @@ export class Promptuna {
     const provider = this.getProvider(providerConfig.type);
 
     // Transform messages to provider format
-    const chatMessages: ChatMessage[] = messages.map((msg) => ({
+    const chatMessages: ChatMessage[] = messages.map(msg => ({
       role: msg.role,
       content: msg.content,
     }));

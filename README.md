@@ -334,7 +334,8 @@ npm run build
 npm run dev
 
 # Run the example
-npx ts-node example.ts
+npm run build
+npx tsx --env-file=.env example.ts
 ```
 
 ## Troubleshooting

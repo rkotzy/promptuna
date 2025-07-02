@@ -1,9 +1,9 @@
-import Ajv from "ajv/dist/2020";
-import addFormats from "ajv-formats";
-import { readFile } from "fs/promises";
-import { resolve, dirname } from "path";
-import { fileURLToPath } from "url";
-import { PromptunaConfig, ConfigurationError } from "../types/config";
+import Ajv from 'ajv/dist/2020';
+import addFormats from 'ajv-formats';
+import { readFile } from 'fs/promises';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { PromptunaConfig, ConfigurationError } from '../types/config';
 
 export interface ValidationResult {
   valid: boolean;
@@ -29,12 +29,17 @@ export class ConfigValidator {
     });
     addFormats(this.ajv);
     // Schema is at the root of the project
-    this.schemaPath = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "schema.json");
+    this.schemaPath = resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      '..',
+      '..',
+      'schema.json'
+    );
   }
 
   private async initializeValidator(): Promise<void> {
     try {
-      const schemaContent = await readFile(this.schemaPath, "utf-8");
+      const schemaContent = await readFile(this.schemaPath, 'utf-8');
       const schema = JSON.parse(schemaContent);
       this.validateFn = this.ajv.compile(schema);
     } catch (error) {
@@ -42,7 +47,7 @@ export class ConfigValidator {
         `Failed to load schema from ${this.schemaPath}`,
         {
           schemaPath: this.schemaPath,
-          error: error instanceof Error ? error.message : error
+          error: error instanceof Error ? error.message : error,
         }
       );
     }
@@ -65,9 +70,9 @@ export class ConfigValidator {
 
     if (!valid) {
       const errors = this.validateFn.errors?.map((error: any) => ({
-        message: error.message || "Unknown error",
-        path: error.instancePath || "/",
-        keyword: error.keyword || "unknown",
+        message: error.message || 'Unknown error',
+        path: error.instancePath || '/',
+        keyword: error.keyword || 'unknown',
       }));
 
       return { valid: false, errors };
@@ -81,18 +86,15 @@ export class ConfigValidator {
   ): Promise<PromptunaConfig> {
     try {
       await this.ensureInitialized();
-      const configContent = await readFile(configPath, "utf-8");
+      const configContent = await readFile(configPath, 'utf-8');
       const config = JSON.parse(configContent);
 
       const validation = await this.validate(config);
       if (!validation.valid) {
-        throw new ConfigurationError(
-          `Configuration validation failed`,
-          {
-            configPath,
-            errors: validation.errors
-          }
-        );
+        throw new ConfigurationError(`Configuration validation failed`, {
+          configPath,
+          errors: validation.errors,
+        });
       }
 
       return config as PromptunaConfig;
@@ -100,13 +102,13 @@ export class ConfigValidator {
       if (error instanceof ConfigurationError) {
         throw error; // Re-throw configuration errors as-is
       }
-      
+
       // Handle file reading and JSON parsing errors
       throw new ConfigurationError(
         `Failed to read or parse config file: ${configPath}`,
         {
           configPath,
-          error: error instanceof Error ? error.message : error
+          error: error instanceof Error ? error.message : error,
         }
       );
     }

@@ -26,5 +26,7 @@ export interface ChatCompletionResponse {
 }
 
 export interface Provider {
-  chatCompletion(options: ChatCompletionOptions): Promise<ChatCompletionResponse>;
+  chatCompletion(
+    options: ChatCompletionOptions
+  ): Promise<ChatCompletionResponse>;
 }

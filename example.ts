@@ -2,8 +2,12 @@ import { Promptuna } from "./src";
 
 // Example usage of the Promptuna SDK
 async function main() {
-  // Initialize the SDK with the path to your config file
-  const promptuna = new Promptuna("./promptuna-example.json");
+  // Initialize the SDK with config file and API keys
+  const promptuna = new Promptuna({
+    configPath: "./promptuna-example.json",
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+  });
 
   try {
     // Load and validate the configuration
@@ -54,10 +58,43 @@ async function main() {
     complexMessages.forEach((msg, i) => {
       console.log(`  ${i + 1}. [${msg.role}]: ${msg.content}`);
     });
+
+    // Demonstrate chat completion (if API keys are provided)
+    if (process.env.OPENAI_API_KEY) {
+      console.log("\n--- Chat Completion Demo ---");
+      
+      try {
+        const response = await promptuna.chatCompletion(
+          "greeting",
+          "v_default",
+          { name: "Alice" }
+        );
+        
+        console.log("\n🔹 Chat completion response:");
+        console.log(`  Model: ${response.model}`);
+        console.log(`  Content: ${response.choices[0].message.content}`);
+        if (response.usage) {
+          console.log(`  Tokens: ${response.usage.total_tokens} total`);
+        }
+      } catch (chatError) {
+        console.log("\n⚠️  Chat completion failed (this is expected if API keys aren't set):");
+        console.log(`  ${chatError instanceof Error ? chatError.message : chatError}`);
+      }
+    } else {
+      console.log("\n💡 To test chat completions, set environment variables:");
+      console.log("   export OPENAI_API_KEY='your-key'");
+      console.log("   export ANTHROPIC_API_KEY='your-key'");
+    }
     
   } catch (error) {
     console.error("❌ Error occurred!");
     console.error("Error:", error instanceof Error ? error.message : error);
+    
+    if (error instanceof Error && error.message.includes('API key not provided')) {
+      console.log("\n💡 Make sure to set your API keys as environment variables:");
+      console.log("   export OPENAI_API_KEY='your-openai-key'");
+      console.log("   export ANTHROPIC_API_KEY='your-anthropic-key'");
+    }
   }
 }
 

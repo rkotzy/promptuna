@@ -6,8 +6,15 @@ export interface PromptunaConfig {
 }
 
 export interface Provider {
-  type: string;
+  type: 'openai' | 'anthropic' | 'google';
   config?: Record<string, any>;
+}
+
+export interface PromptunaRuntimeConfig {
+  configPath: string;
+  openaiApiKey?: string;
+  anthropicApiKey?: string;
+  googleApiKey?: string;
 }
 
 export interface JsonSchema {
@@ -15,7 +22,7 @@ export interface JsonSchema {
 }
 
 export interface RenderedMessage {
-  role: "system" | "user" | "assistant" | "function";
+  role: "system" | "user" | "assistant";
   content: string;
 }
 

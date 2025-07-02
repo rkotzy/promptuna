@@ -46,8 +46,15 @@
       "required": ["type"],
       "additionalProperties": true,
       "properties": {
-        "type": { "type": "string" },
-        "config": { "type": "object" }
+        "type": { 
+          "type": "string",
+          "enum": ["openai", "anthropic", "google"],
+          "description": "The LLM provider type"
+        },
+        "config": { 
+          "type": "object",
+          "description": "Additional provider-specific configuration"
+        }
       }
     },
 

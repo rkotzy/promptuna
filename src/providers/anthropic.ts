@@ -1,0 +1,77 @@
+import { Provider, ChatCompletionOptions, ChatCompletionResponse } from './types';
+
+export class AnthropicProvider implements Provider {
+  private client: any;
+
+  constructor(apiKey: string) {
+    this.initializeClient(apiKey);
+  }
+
+  private async initializeClient(apiKey: string) {
+    try {
+      // @ts-ignore - Optional dependency
+      const Anthropic = (await import('@anthropic-ai/sdk')).default;
+      this.client = new Anthropic({ apiKey });
+    } catch (error: any) {
+      if (error.code === 'MODULE_NOT_FOUND' || error.message?.includes('Cannot find module')) {
+        throw new Error('Anthropic SDK not installed. Please run: npm install @anthropic-ai/sdk');
+      }
+      throw error;
+    }
+  }
+
+  async chatCompletion(options: ChatCompletionOptions): Promise<ChatCompletionResponse> {
+    if (!this.client) {
+      throw new Error('Anthropic client not initialized');
+    }
+
+    try {
+      // Transform messages to Anthropic format
+      const { system, messages } = this.transformMessages(options.messages);
+      
+      const response = await this.client.messages.create({
+        model: options.model,
+        messages: messages,
+        system: system,
+        max_tokens: options.max_tokens || 1024,
+        temperature: options.temperature,
+      });
+
+      return {
+        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        model: options.model,
+        choices: [{
+          message: {
+            role: 'assistant',
+            content: response.content[0].text,
+          },
+          finish_reason: response.stop_reason || 'stop',
+          index: 0,
+        }],
+        usage: response.usage ? {
+          prompt_tokens: response.usage.input_tokens,
+          completion_tokens: response.usage.output_tokens,
+          total_tokens: response.usage.input_tokens + response.usage.output_tokens,
+        } : undefined,
+      };
+    } catch (error: any) {
+      throw new Error(`Anthropic API error: ${error.message}`);
+    }
+  }
+
+  private transformMessages(messages: any[]) {
+    const systemMessages = messages.filter(msg => msg.role === 'system');
+    const conversationMessages = messages.filter(msg => msg.role !== 'system');
+
+    const system = systemMessages.length > 0
+      ? systemMessages.map(msg => msg.content).join('\n\n')
+      : undefined;
+
+    const anthropicMessages = conversationMessages.map(msg => ({
+      role: msg.role === 'assistant' ? 'assistant' : 'user',
+      content: msg.content,
+    }));
+
+    return { system, messages: anthropicMessages };
+  }
+}

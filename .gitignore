@@ -16,6 +16,9 @@ build/
 *.swo
 *~
 
+# Claude development files
+CLAUDE.md
+
 # OS
 .DS_Store
 Thumbs.db

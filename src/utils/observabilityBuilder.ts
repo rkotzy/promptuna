@@ -6,6 +6,7 @@ interface BuilderInit {
   sdkVersion: string;
   environment?: 'dev' | 'prod';
   promptId: string;
+  userId?: string;
   /** Variant may be unknown at construction time */
   variantId?: string;
   routingReason: PromptunaObservability['routingReason'];
@@ -60,6 +61,7 @@ export class ObservabilityBuilder {
       sdkVersion: init.sdkVersion,
       environment: init.environment,
       promptId: init.promptId,
+      userId: init.userId,
       // routing fields will be added dynamically on build so keep minimal here
     } as const;
 

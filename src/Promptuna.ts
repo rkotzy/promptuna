@@ -208,11 +208,16 @@ export class Promptuna {
     variables: Record<string, any> = {},
     opts: ChatInvokeOptions = {}
   ): Promise<ChatCompletionResponse> {
+    const userId = opts.userId;
+    const tags = opts.tags ?? [];
+    const now = opts.unixTime ?? Math.floor(Date.now() / 1000);
+
     // Observability builder created at function start to capture full E2E timing
     const obsBuilder = new ObservabilityBuilder({
       sdkVersion: this.sdkVersion,
       environment: this.environment,
       promptId,
+      userId,
       variantId: 'unknown',
       routingReason: 'default',
       emit: this.emitObservability,
@@ -220,10 +225,6 @@ export class Promptuna {
 
     let variantId: string | 'unknown' = 'unknown';
     let lastProviderType: string = 'unknown';
-
-    const userId = opts.userId;
-    const tags = opts.tags ?? [];
-    const now = opts.unixTime ?? Math.floor(Date.now() / 1000);
 
     try {
       const config = await this.getConfig();

@@ -1,6 +1,8 @@
 export interface PromptunaObservability {
   // Request identification
   requestId: string;
+  /** Stable identifier for the end-user making the request */
+  userId?: string;
   /** ISO-8601 timestamp in UTC */
   timestamp: string;
   /** Version of the Promptuna SDK (e.g. read from package.json) */

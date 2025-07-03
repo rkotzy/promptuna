@@ -1,11 +1,6 @@
 import { createHash } from 'crypto';
 import { Variant, Prompt, RoutingRule, PhasedRule } from '../types/config';
-
-export type RoutingReason =
-  | 'tag-match'
-  | 'phased-rollout'
-  | 'weight-distribution'
-  | 'default';
+import { RoutingReason } from '../types/observability';
 
 export interface VariantSelection {
   variantId: string;

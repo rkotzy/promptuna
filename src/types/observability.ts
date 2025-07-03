@@ -12,12 +12,7 @@ export interface PromptunaObservability {
   promptId: string;
   /** The concrete variant executed – renamed from selectedVariant */
   variantId: string;
-  routingReason:
-    | 'default'
-    | 'tag-match'
-    | 'weight-distribution'
-    | 'phased-rollout'
-    | 'explicit';
+  routingReason: RoutingReason;
   routingTags?: string[];
 
   // Performance metrics
@@ -86,3 +81,9 @@ export interface ObservabilityError {
   httpStatus?: number;
   stack?: string;
 }
+
+export type RoutingReason =
+  | 'tag-match'
+  | 'phased-rollout'
+  | 'weight-distribution'
+  | 'default';

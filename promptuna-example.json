@@ -44,7 +44,9 @@
             "type": "json_schema",
             "schemaRef": "jsonGreeting"
           },
-          "fallback": [{ "provider": "anthropic", "model": "claude-3-sonnet" }]
+          "fallback": [
+            { "provider": "anthropic", "model": "claude-sonnet-4-20250514" }
+          ]
         },
 
         "v_us": {
@@ -69,7 +71,9 @@
             "type": "json_schema",
             "schemaRef": "jsonGreeting"
           },
-          "fallback": [{ "provider": "anthropic", "model": "claude-3-sonnet" }]
+          "fallback": [
+            { "provider": "anthropic", "model": "claude-sonnet-4-20250514" }
+          ]
         },
 
         "v_beta": {
@@ -90,7 +94,9 @@
             "type": "json_schema",
             "schemaRef": "jsonGreeting"
           },
-          "fallback": [{ "provider": "anthropic", "model": "claude-3-sonnet" }]
+          "fallback": [
+            { "provider": "anthropic", "model": "claude-sonnet-4-20250514" }
+          ]
         }
       },
 

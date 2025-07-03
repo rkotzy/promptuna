@@ -33,7 +33,7 @@
     "liquidjs": "^10.9.0"
   },
   "peerDependencies": {
-    "@anthropic-ai/sdk": "^0.24.0",
+    "@anthropic-ai/sdk": "^0.24.3",
     "@google/generative-ai": "^0.15.0",
     "openai": "^4.0.0"
   },

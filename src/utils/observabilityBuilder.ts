@@ -49,6 +49,7 @@ export class ObservabilityBuilder {
   private experimentContext?: PromptunaObservability['experimentContext'];
   private routingReason: PromptunaObservability['routingReason'];
   private routingTags?: string[];
+  private fallbacks: NonNullable<PromptunaObservability['fallbacks']> = [];
 
   constructor(init: BuilderInit) {
     this.emit = init.emit;
@@ -120,6 +121,15 @@ export class ObservabilityBuilder {
     this.variantId = id;
   }
 
+  /** Record a fallback attempt (called for both success & failure) */
+  addFallbackAttempt(attempt: {
+    provider: string;
+    model: string;
+    reason: 'provider-error' | 'timeout' | 'rate-limit';
+  }): void {
+    this.fallbacks.push(attempt);
+  }
+
   /* ------------------------- finalisation ------------------------- */
   buildSuccess(): PromptunaObservability {
     const event: PromptunaObservability = {
@@ -132,7 +142,8 @@ export class ObservabilityBuilder {
       providerRequestId: this.providerRequestId,
       timings: this.timer.end(),
       tokenUsage: this.tokenUsage,
-      fallbackUsed: false,
+      fallbackUsed: this.fallbacks.length > 0,
+      fallbacks: this.fallbacks.length ? this.fallbacks : undefined,
       success: true,
       variantId: this.variantId,
     } as PromptunaObservability;
@@ -151,7 +162,8 @@ export class ObservabilityBuilder {
       model: this.model ?? 'unknown',
       providerRequestId: this.providerRequestId,
       timings: this.timer.end(),
-      fallbackUsed: false,
+      fallbackUsed: this.fallbacks.length > 0,
+      fallbacks: this.fallbacks.length ? this.fallbacks : undefined,
       success: false,
       error: {
         type: error?.constructor?.name ?? 'Error',
@@ -159,7 +171,7 @@ export class ObservabilityBuilder {
         retryable: !!error?.retryable,
         provider: this.provider,
         code: error?.code,
-        httpStatus: error?.status,
+        httpStatus: error?.httpStatus ?? error?.status,
         stack: error?.stack,
       },
       variantId: this.variantId,

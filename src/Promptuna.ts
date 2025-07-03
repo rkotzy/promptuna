@@ -20,10 +20,10 @@ import { OpenAIProvider } from './providers/openai';
 import { AnthropicProvider } from './providers/anthropic';
 import { GoogleProvider } from './providers/google';
 import { Provider } from './providers/types';
-import { ProviderConfig } from './types/config';
 import { ObservabilityBuilder } from './utils/observabilityBuilder';
 import type { ChatInvokeOptions } from './types/invokeOptions';
 import { selectVariant } from './utils/variantSelector';
+import { executeWithFallback } from './utils/fallbackExecutor';
 
 export class Promptuna {
   private configPath: string;
@@ -219,7 +219,7 @@ export class Promptuna {
     });
 
     let variantId: string | 'unknown' = 'unknown';
-    let providerConfig: ProviderConfig | undefined;
+    let lastProviderType: string = 'unknown';
 
     const userId = opts.userId;
     const tags = opts.tags ?? [];
@@ -262,37 +262,78 @@ export class Promptuna {
       const messages = await this.getTemplate(promptId, selectedId, variables);
       obsBuilder.markTemplate();
 
-      // Provider config
-      providerConfig = config.providers[variant.provider];
-      if (!providerConfig) {
-        throw new ExecutionError(`Provider configuration not found`, {
-          promptId,
-          variantId: selectedId,
-          providerId: variant.provider,
-          availableProviders: Object.keys(config.providers),
-        });
-      }
+      // ---------------------- fallback execution ----------------------
+      // Build **ordered** list of provider/model combos to attempt.
+      // 1) primary variant itself
+      // 2) any fallback targets defined in the variant
+      type BasicTarget = { providerId: string; model: string };
 
-      // Provider instance
-      const provider = this.getProvider(providerConfig.type);
+      const primaryTarget: BasicTarget = {
+        providerId: variant.provider,
+        model: variant.model,
+      };
 
-      // Identify provider before call
-      obsBuilder.setProvider(providerConfig.type, variant.model);
+      const fallbackTargets: BasicTarget[] = (variant.fallback ?? []).map(
+        fb => ({
+          providerId: fb.provider,
+          model: fb.model,
+        })
+      );
 
-      // Transform messages
+      // Enrich each target with its concrete provider type ("openai", "anthropic", ...)
+      const targets = [primaryTarget, ...fallbackTargets].map(target => {
+        const providerCfg = config.providers[target.providerId];
+
+        if (!providerCfg) {
+          // Configuration error – provider referenced in variant but not declared globally
+          throw new ExecutionError(`Provider configuration not found`, {
+            promptId,
+            variantId: selectedId,
+            providerId: target.providerId,
+            availableProviders: Object.keys(config.providers),
+          });
+        }
+
+        return {
+          ...target,
+          providerType: providerCfg.type, // Ensures we know which concrete SDK class to instantiate
+        };
+      });
+
+      // Transform messages once – reused for all attempts
       const chatMessages: ChatMessage[] = messages.map(msg => ({
         role: msg.role,
         content: msg.content,
       }));
 
-      const options: ChatCompletionOptions = {
-        messages: chatMessages,
-        model: variant.model,
-        temperature: variant.parameters?.temperature,
-        max_tokens: variant.parameters?.max_tokens,
-      };
+      const response = await executeWithFallback<ChatCompletionResponse>(
+        targets,
+        async (provider, model) => {
+          const options: ChatCompletionOptions = {
+            messages: chatMessages,
+            model,
+            temperature: variant.parameters?.temperature,
+            max_tokens: variant.parameters?.max_tokens,
+          };
 
-      const response = await provider.chatCompletion(options);
+          const res = await provider.chatCompletion(options);
+          return res;
+        },
+        (type: string) => this.getProvider(type),
+        ctx => {
+          if (ctx.error) {
+            obsBuilder.addFallbackAttempt({
+              provider: ctx.target.providerType,
+              model: ctx.target.model,
+              reason: ctx.error.reason,
+            });
+          } else {
+            // Successful attempt – record provider used
+            obsBuilder.setProvider(ctx.target.providerType, ctx.target.model);
+            lastProviderType = ctx.target.providerType;
+          }
+        }
+      );
 
       // Success telemetry
       obsBuilder.markProvider();
@@ -308,7 +349,7 @@ export class Promptuna {
       const errorDetails = {
         promptId,
         variantId,
-        provider: providerConfig?.type ?? 'unknown',
+        provider: lastProviderType,
         originalError: error instanceof Error ? error.message : String(error),
         errorType: error?.constructor?.name ?? 'Error',
         ...(error?.code && { errorCode: error.code }),
@@ -316,7 +357,7 @@ export class Promptuna {
       };
 
       throw new ExecutionError(
-        `Chat completion failed for ${providerConfig?.type ?? 'provider'}: ${error instanceof Error ? error.message : String(error)}`,
+        `Chat completion failed for ${lastProviderType}: ${error instanceof Error ? error.message : String(error)}`,
         errorDetails
       );
     }

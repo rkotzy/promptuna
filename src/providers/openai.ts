@@ -3,6 +3,7 @@ import {
   ChatCompletionOptions,
   ChatCompletionResponse,
 } from './types';
+import { ProviderError } from '../errors';
 
 export class OpenAIProvider implements Provider {
   private client: any;
@@ -14,7 +15,7 @@ export class OpenAIProvider implements Provider {
 
   private async initializeClient() {
     if (this.client) return;
-    
+
     try {
       // @ts-ignore - Optional dependency
       const OpenAI = (await import('openai')).default;
@@ -36,7 +37,7 @@ export class OpenAIProvider implements Provider {
     options: ChatCompletionOptions
   ): Promise<ChatCompletionResponse> {
     await this.initializeClient();
-    
+
     if (!this.client) {
       throw new Error('OpenAI client not initialized');
     }
@@ -69,7 +70,23 @@ export class OpenAIProvider implements Provider {
           : undefined,
       };
     } catch (error: any) {
-      throw new Error(`OpenAI API error: ${error.message}`);
+      // Normalize into ProviderError – prefer HTTP status codes for mapping
+      const message: string = error?.message ?? 'OpenAI API error';
+      const status: number | undefined = error?.status ?? error?.httpStatus;
+
+      let reason: 'provider-error' | 'timeout' | 'rate-limit' =
+        'provider-error';
+      let retryable = false;
+
+      if (status === 429) {
+        reason = 'rate-limit';
+        retryable = true;
+      } else if (status === 408 || status === 504) {
+        reason = 'timeout';
+        retryable = true;
+      }
+
+      throw new ProviderError(reason, message, retryable, error?.code, status);
     }
   }
 }

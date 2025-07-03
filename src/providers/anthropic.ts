@@ -3,6 +3,7 @@ import {
   ChatCompletionOptions,
   ChatCompletionResponse,
 } from './types';
+import { ProviderError } from '../errors';
 
 export class AnthropicProvider implements Provider {
   private client: any;
@@ -14,7 +15,7 @@ export class AnthropicProvider implements Provider {
 
   private async initializeClient() {
     if (this.client) return;
-    
+
     try {
       // @ts-ignore - Optional dependency
       const Anthropic = (await import('@anthropic-ai/sdk')).default;
@@ -36,7 +37,7 @@ export class AnthropicProvider implements Provider {
     options: ChatCompletionOptions
   ): Promise<ChatCompletionResponse> {
     await this.initializeClient();
-    
+
     if (!this.client) {
       throw new Error('Anthropic client not initialized');
     }
@@ -76,7 +77,23 @@ export class AnthropicProvider implements Provider {
           : undefined,
       };
     } catch (error: any) {
-      throw new Error(`Anthropic API error: ${error.message}`);
+      // Normalize Anthropic errors via HTTP status if present
+      const message: string = error?.message ?? 'Anthropic API error';
+      const status: number | undefined = error?.status ?? error?.httpStatus;
+
+      let reason: 'provider-error' | 'timeout' | 'rate-limit' =
+        'provider-error';
+      let retryable = false;
+
+      if (status === 429) {
+        reason = 'rate-limit';
+        retryable = true;
+      } else if (status === 408 || status === 504) {
+        reason = 'timeout';
+        retryable = true;
+      }
+
+      throw new ProviderError(reason, message, retryable, error?.code, status);
     }
   }
 

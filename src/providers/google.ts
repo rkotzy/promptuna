@@ -3,6 +3,7 @@ import {
   ChatCompletionOptions,
   ChatCompletionResponse,
 } from './types';
+import { ProviderError } from '../errors';
 
 export class GoogleProvider implements Provider {
   private genAI: any;
@@ -14,7 +15,7 @@ export class GoogleProvider implements Provider {
 
   private async initializeClient() {
     if (this.genAI) return;
-    
+
     try {
       // @ts-ignore - Optional dependency
       const { GoogleGenerativeAI } = await import('@google/generative-ai');
@@ -36,7 +37,7 @@ export class GoogleProvider implements Provider {
     options: ChatCompletionOptions
   ): Promise<ChatCompletionResponse> {
     await this.initializeClient();
-    
+
     if (!this.genAI) {
       throw new Error('Google client not initialized');
     }
@@ -81,7 +82,22 @@ export class GoogleProvider implements Provider {
           : undefined,
       };
     } catch (error: any) {
-      throw new Error(`Google API error: ${error.message}`);
+      const message: string = error?.message ?? 'Google API error';
+      const status: number | undefined = error?.status ?? error?.httpStatus;
+
+      let reason: 'provider-error' | 'timeout' | 'rate-limit' =
+        'provider-error';
+      let retryable = false;
+
+      if (status === 429) {
+        reason = 'rate-limit';
+        retryable = true;
+      } else if (status === 408 || status === 504) {
+        reason = 'timeout';
+        retryable = true;
+      }
+
+      throw new ProviderError(reason, message, retryable, error?.code, status);
     }
   }
 

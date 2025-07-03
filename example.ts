@@ -1,4 +1,10 @@
 import { Promptuna } from './src/index.ts';
+import { ProviderError } from './src/errors';
+import type {
+  Provider,
+  ChatCompletionOptions,
+  ChatCompletionResponse,
+} from './src/providers/types';
 
 // Example usage of the Promptuna SDK
 async function main() {
@@ -97,6 +103,45 @@ async function main() {
         console.log('\n🔹 No tag (user-general-789):');
         console.log(`  Model: ${responseNoTag.model}`);
         console.log(`  Content: ${responseNoTag.choices[0].message.content}`);
+
+        // ------------------------------------------------------------
+        // Forced-error demo: swap the cached OpenAI provider instance
+        // with a stub that always throws a retryable rate-limit error
+        // so we can observe automatic fallback in action.
+        // ------------------------------------------------------------
+
+        class AlwaysRateLimited implements Provider {
+          async chatCompletion(
+            _opts: ChatCompletionOptions
+          ): Promise<ChatCompletionResponse> {
+            // 429 triggers "rate-limit" logic & is retryable
+            throw new ProviderError(
+              'rate-limit',
+              'Simulated 429 Rate Limit',
+              true,
+              '429',
+              429
+            );
+          }
+        }
+
+        // Replace the cached OpenAI provider (key is 'openai')
+        (promptuna as any).providers.set('openai', new AlwaysRateLimited());
+
+        // Make another call – fallback should activate automatically
+        const responseFallback = await promptuna.chatCompletion(
+          'greeting',
+          { name: 'Frank', city: 'Paris' },
+          { userId: 'user-fallback-999' }
+        );
+
+        console.log(
+          '\n🔹 Forced error — fallback engaged (user-fallback-999):'
+        );
+        console.log(`  Model: ${responseFallback.model}`);
+        console.log(
+          `  Content: ${responseFallback.choices[0].message.content}`
+        );
       } catch (chatError) {
         console.log('\n⚠️  Chat completion failed:');
         console.log(

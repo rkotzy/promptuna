@@ -8,6 +8,7 @@ import {
   RenderedMessage,
   ExecutionError,
   Variant,
+  Prompt,
 } from './types/config';
 import { TemplateProcessor } from './processors/templateProcessor';
 import {
@@ -18,7 +19,11 @@ import {
 import { OpenAIProvider } from './providers/openai';
 import { AnthropicProvider } from './providers/anthropic';
 import { GoogleProvider } from './providers/google';
+import { Provider } from './providers/types';
+import { ProviderConfig } from './types/config';
 import { ObservabilityBuilder } from './utils/observabilityBuilder';
+import type { ChatInvokeOptions } from './types/invokeOptions';
+import { selectVariant } from './utils/variantSelector';
 
 export class Promptuna {
   private configPath: string;
@@ -92,38 +97,27 @@ export class Promptuna {
    */
   async getTemplate(
     promptId: string,
-    variantId?: string,
-    variables?: Record<string, any>
+    variantId: string,
+    variables: Record<string, any> = {}
   ): Promise<RenderedMessage[]> {
     const config = await this.getConfig();
 
-    let variant: Variant;
-    let selectedVariantId = variantId;
+    // Validate prompt & variant
+    const prompt: Prompt | undefined = config.prompts[promptId];
+    if (!prompt) {
+      throw new ExecutionError(`Prompt not found`, {
+        promptId,
+        availablePrompts: Object.keys(config.prompts),
+      });
+    }
 
-    if (!selectedVariantId) {
-      // Use both the ID and variant from findDefaultVariant
-      const [defaultVariantId, defaultVariant] =
-        await this.findDefaultVariant(promptId);
-      selectedVariantId = defaultVariantId;
-      variant = defaultVariant;
-    } else {
-      // Only fetch variant when we have a specific variantId
-      const prompt = config.prompts[promptId];
-      if (!prompt) {
-        throw new ExecutionError(`Prompt not found`, {
-          promptId,
-          availablePrompts: Object.keys(config.prompts),
-        });
-      }
-
-      variant = prompt.variants?.[selectedVariantId] as Variant;
-      if (!variant) {
-        throw new ExecutionError(`Variant not found`, {
-          promptId,
-          variantId: selectedVariantId,
-          availableVariants: Object.keys(prompt.variants || {}),
-        });
-      }
+    const variant = prompt.variants?.[variantId] as Variant;
+    if (!variant) {
+      throw new ExecutionError(`Variant not found`, {
+        promptId,
+        variantId,
+        availableVariants: Object.keys(prompt.variants || {}),
+      });
     }
 
     // Process all messages in the variant
@@ -131,7 +125,7 @@ export class Promptuna {
     if (!Array.isArray(messages)) {
       throw new ExecutionError(`Invalid messages format in variant`, {
         promptId,
-        variantId: selectedVariantId,
+        variantId,
         messagesType: typeof messages,
       });
     }
@@ -142,7 +136,7 @@ export class Promptuna {
       if (!message.role || !message.content?.template) {
         throw new ExecutionError(`Invalid message format in variant`, {
           promptId,
-          variantId: selectedVariantId,
+          variantId,
           messageStructure: {
             hasRole: !!message.role,
             hasContent: !!message.content,
@@ -166,46 +160,10 @@ export class Promptuna {
   }
 
   /**
-   * Finds the default variant for a given prompt
-   * @private
-   * @param promptId The ID of the prompt
-   * @returns A tuple of [variantId, variant] for the default variant
-   * @throws ExecutionError if prompt not found or no default variant exists
-   */
-  private async findDefaultVariant(
-    promptId: string
-  ): Promise<[string, Variant]> {
-    const config = await this.getConfig();
-
-    // Find the prompt
-    const prompt = config.prompts[promptId];
-    if (!prompt) {
-      throw new ExecutionError(`Prompt not found`, {
-        promptId,
-        availablePrompts: Object.keys(config.prompts),
-      });
-    }
-
-    // Find the default variant
-    const defaultVariantEntry = Object.entries(prompt.variants || {}).find(
-      ([_, variant]) => (variant as Variant).default === true
-    );
-
-    if (!defaultVariantEntry) {
-      throw new ExecutionError(`No default variant found for prompt`, {
-        promptId,
-        availableVariants: Object.keys(prompt.variants || {}),
-      });
-    }
-
-    return [defaultVariantEntry[0], defaultVariantEntry[1] as Variant];
-  }
-
-  /**
    * Gets or creates a provider instance
    * @private
    */
-  private getProvider(type: string): any {
+  private getProvider(type: string): Provider {
     if (this.providers.has(type)) {
       return this.providers.get(type);
     }
@@ -247,57 +205,86 @@ export class Promptuna {
    */
   async chatCompletion(
     promptId: string,
-    variables?: Record<string, any>
+    variables: Record<string, any> = {},
+    opts: ChatInvokeOptions = {}
   ): Promise<ChatCompletionResponse> {
+    // Observability builder created at function start to capture full E2E timing
     const obsBuilder = new ObservabilityBuilder({
       sdkVersion: this.sdkVersion,
       environment: this.environment,
       promptId,
+      variantId: 'unknown',
       routingReason: 'default',
       emit: this.emitObservability,
     });
 
-    // Will be filled once known so we can use in error path
     let variantId: string | 'unknown' = 'unknown';
-    let providerConfig: any;
+    let providerConfig: ProviderConfig | undefined;
+
+    const userId = opts.userId;
+    const tags = opts.tags ?? [];
+    const now = opts.unixTime ?? Math.floor(Date.now() / 1000);
 
     try {
       const config = await this.getConfig();
 
-      // Find the default variant
-      const [variantId, variant] = await this.findDefaultVariant(promptId);
+      // Fetch prompt definition
+      const prompt: Prompt | undefined = config.prompts[promptId];
+      if (!prompt) {
+        throw new ExecutionError(`Prompt not found`, {
+          promptId,
+          availablePrompts: Object.keys(config.prompts),
+        });
+      }
 
-      // Update builder with variant
-      obsBuilder.setVariantId(variantId);
+      // ---------------------- routing & selection ----------------------
+      const {
+        variantId: selectedId,
+        variant,
+        reason,
+        weightPicked,
+      } = selectVariant(prompt, promptId, { userId, tags, now });
 
-      const messages = await this.getTemplate(promptId, variantId, variables);
+      variantId = selectedId; // for error paths
 
+      // update builder routing info
+      obsBuilder.setVariantId(selectedId);
+      obsBuilder.setRouting(reason, tags.length ? tags : undefined);
+      if (weightPicked !== undefined) {
+        obsBuilder.setExperimentContext({
+          tags,
+          weightedSelection: true,
+          selectedWeight: weightPicked,
+        });
+      }
+
+      // Render template
+      const messages = await this.getTemplate(promptId, selectedId, variables);
       obsBuilder.markTemplate();
 
-      // Get the provider configuration
+      // Provider config
       providerConfig = config.providers[variant.provider];
       if (!providerConfig) {
         throw new ExecutionError(`Provider configuration not found`, {
           promptId,
-          variantId,
+          variantId: selectedId,
           providerId: variant.provider,
           availableProviders: Object.keys(config.providers),
         });
       }
 
-      // Get the provider instance
+      // Provider instance
       const provider = this.getProvider(providerConfig.type);
 
-      // record provider details before call
+      // Identify provider before call
       obsBuilder.setProvider(providerConfig.type, variant.model);
 
-      // Transform messages to provider format
+      // Transform messages
       const chatMessages: ChatMessage[] = messages.map(msg => ({
         role: msg.role,
         content: msg.content,
       }));
 
-      // Prepare options for chat completion
       const options: ChatCompletionOptions = {
         messages: chatMessages,
         model: variant.model,
@@ -318,7 +305,6 @@ export class Promptuna {
       obsBuilder.markProvider();
       obsBuilder.buildError(error);
 
-      // Preserve original error information
       const errorDetails = {
         promptId,
         variantId,

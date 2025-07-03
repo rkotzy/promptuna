@@ -1,12 +1,15 @@
 export { Promptuna } from './Promptuna';
-export {
-  ConfigValidator,
-  ValidationResult,
-} from './validators/configValidator';
+export { ConfigValidator } from './validators/configValidator';
+
+export type { ValidationResult } from './validators/configValidator';
+
 export * from './types/config';
-export {
+
+export type {
   ChatMessage,
   ChatCompletionOptions,
   ChatCompletionResponse,
   Provider,
 } from './providers/types';
+
+export type { ChatInvokeOptions } from './types/invokeOptions';

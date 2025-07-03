@@ -98,7 +98,8 @@
         "rules": [
           { "tags": ["US"], "weight": 70, "target": "v_us" },
           { "tags": ["beta"], "weight": 30, "target": "v_beta" },
-          { "target": "v_default" }
+          { "weight": 60, "target": "v_default" },
+          { "weight": 40, "target": "v_beta" }
         ],
 
         "phased": [

@@ -1,8 +1,8 @@
 export interface PromptunaConfig {
   version: string;
-  providers: Record<string, any>;
+  providers: Record<string, ProviderConfig>;
   responseSchemas?: Record<string, any>;
-  prompts: Record<string, any>;
+  prompts: Record<string, Prompt>;
 }
 
 export interface PromptunaRuntimeConfig {
@@ -87,4 +87,35 @@ export class TemplateError extends PromptunaError {
   constructor(message: string, details?: any) {
     super(message, 'TEMPLATE_ERROR', details);
   }
+}
+
+// ---------------------- Routing & Prompt ----------------------
+
+export interface RoutingRule {
+  target: string;
+  weight?: number;
+  tags?: string[];
+}
+
+export interface PhasedRule {
+  start: number;
+  end?: number;
+  weights: Record<string, number>;
+}
+
+export interface Routing {
+  rules: RoutingRule[];
+  phased?: PhasedRule[];
+}
+
+export interface Prompt {
+  description: string;
+  variants: Record<string, Variant>;
+  routing: Routing;
+  chains?: any[]; // loosely typed for now
+}
+
+export interface ProviderConfig {
+  type: 'openai' | 'anthropic' | 'google';
+  config?: Record<string, any>; // provider-specific additional config
 }

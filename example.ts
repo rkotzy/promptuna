@@ -1,4 +1,4 @@
-import { Promptuna } from './dist/index.js';
+import { Promptuna } from './src/index.ts';
 
 // Example usage of the Promptuna SDK
 async function main() {
@@ -30,7 +30,7 @@ async function main() {
     const simpleVariables = { name: 'Alice' };
     const simpleMessages = await promptuna.getTemplate(
       'greeting',
-      undefined, // Uses default variant
+      'v_default', // Specify concrete default variant
       simpleVariables
     );
 
@@ -65,20 +65,38 @@ async function main() {
 
     // Demonstrate chat completion (if API keys are provided)
     if (process.env.OPENAI_API_KEY) {
-      console.log('\n--- Chat Completion Demo ---');
+      console.log('\n--- Chat Completion Demo (Routing) ---');
 
       try {
-        const response = await promptuna.chatCompletion(
+        // Example 1: Tag-based routing (US)
+        const responseUS = await promptuna.chatCompletion(
           'greeting',
-          complexVariables // Uses default variant automatically
+          { name: 'Charlie', city: 'New York' },
+          { userId: 'user-us-123', tags: ['US'] }
         );
+        console.log('\n🔹 US tag (user-us-123):');
+        console.log(`  Model: ${responseUS.model}`);
+        console.log(`  Content: ${responseUS.choices[0].message.content}`);
 
-        console.log('\n🔹 Chat completion response:');
-        console.log(`  Model: ${response.model}`);
-        console.log(`  Content: ${response.choices[0].message.content}`);
-        if (response.usage) {
-          console.log(`  Tokens: ${response.usage.total_tokens} total`);
-        }
+        // Example 2: Tag-based routing (beta)
+        const responseBeta = await promptuna.chatCompletion(
+          'greeting',
+          { name: 'Dana', city: 'Austin' },
+          { userId: 'user-beta-456', tags: ['beta'] }
+        );
+        console.log('\n🔹 Beta tag (user-beta-456):');
+        console.log(`  Model: ${responseBeta.model}`);
+        console.log(`  Content: ${responseBeta.choices[0].message.content}`);
+
+        // Example 3: No tags (weight distribution)
+        const responseNoTag = await promptuna.chatCompletion(
+          'greeting',
+          { name: 'Eve', city: 'London' },
+          { userId: 'user-general-789' } // no tags provided
+        );
+        console.log('\n🔹 No tag (user-general-789):');
+        console.log(`  Model: ${responseNoTag.model}`);
+        console.log(`  Content: ${responseNoTag.choices[0].message.content}`);
       } catch (chatError) {
         console.log('\n⚠️  Chat completion failed:');
         console.log(

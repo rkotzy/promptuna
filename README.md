@@ -114,8 +114,8 @@ async function main() {
     // Generate a chat completion
     const response = await promptuna.chatCompletion(
       'greeting', // Prompt ID
-      'gpt4', // Variant ID
-      { name: 'Alice' } // Template variables
+      { name: 'Alice' }, // Template variables
+      { userId: 'alice123', tags: ['US'] } // Optional routing context
     );
 
     console.log(response.choices[0].message.content);
@@ -146,15 +146,15 @@ new Promptuna(config: PromptunaRuntimeConfig)
 
 ### Methods
 
-#### `chatCompletion(promptId, variantId, variables)`
+#### `chatCompletion(promptId, variables, options?)`
 
 Execute a chat completion using the specified prompt variant.
 
 ```typescript
 const response = await promptuna.chatCompletion(
   'greeting', // Prompt ID from config
-  'gpt4', // Variant ID from config
-  { name: 'Alice' } // Variables for template interpolation
+  { name: 'Alice' }, // Variables for template interpolation
+  { userId: 'alice123' } // Optional routing options (tags, userId)
 );
 ```
 
@@ -192,19 +192,17 @@ const promptuna = new Promptuna({
 });
 
 // Use different providers for the same prompt
-const gptResponse = await promptuna.chatCompletion('summary', 'gpt4-variant', {
+const gptResponse = await promptuna.chatCompletion('summary', {
   text: 'Long text...',
 });
-const claudeResponse = await promptuna.chatCompletion(
-  'summary',
-  'claude-variant',
-  { text: 'Long text...' }
-);
-const geminiResponse = await promptuna.chatCompletion(
-  'summary',
-  'gemini-variant',
-  { text: 'Long text...' }
-);
+
+// The provider will be selected via routing rules
+const claudeResponse = await promptuna.chatCompletion('summary', {
+  text: 'Long text...',
+});
+const geminiResponse = await promptuna.chatCompletion('summary', {
+  text: 'Long text...',
+});
 ```
 
 ## Configuration
@@ -290,7 +288,7 @@ Promptuna uses the Liquid template engine for variable interpolation:
 ```
 
 ```typescript
-const response = await promptuna.chatCompletion('greeting', 'variant', {
+const response = await promptuna.chatCompletion('greeting', {
   name: 'Alice',
   date: '2024-01-15',
 });
@@ -300,7 +298,7 @@ const response = await promptuna.chatCompletion('greeting', 'variant', {
 
 ```typescript
 try {
-  const response = await promptuna.chatCompletion('prompt', 'variant', {});
+  const response = await promptuna.chatCompletion('prompt', {});
 } catch (error) {
   if (error.message.includes('API key not provided')) {
     console.log('Set your API keys as environment variables');
@@ -348,7 +346,6 @@ npm run build
 npm run dev
 
 # Run the example
-npm run build
 npx tsx --env-file=.env example.ts
 ```
 
@@ -389,3 +386,45 @@ If you see peer dependency warnings, make sure you're using compatible provider 
 ## License
 
 MIT
+
+## Routing Rules with Weights & Tags
+
+Promptuna supports sophisticated routing logic out of the box. The snippet below shows how you can combine **tag-based rules**, **weight distributions**, and **phased rollouts** in a single prompt:
+
+```jsonc
+"routing": {
+  "rules": [
+    { "tags": ["US"],   "weight": 70, "target": "v_us" },   // Tag based
+    { "tags": ["beta"], "weight": 30, "target": "v_beta" }, // Tag based
+
+    { "weight": 60, "target": "v_default" }, // Weight distribution (no tags)
+    { "weight": 40, "target": "v_beta" }     // Weight distribution (no tags)
+  ],
+  "phased": [
+    {
+      "start": 1751328000,
+      "end":   1752537600,
+      "weights": { "v_us": 50, "v_default": 50 }
+    },
+    {
+      "start": 1752537600,
+      "weights": { "v_us": 100, "v_default": 0 }
+    }
+  ]
+}
+```
+
+- **Tag-based rules** take priority. If multiple tag rules match, the given weights decide the split.
+- If no tag rules match, **weight distribution** rules are applied.
+- If `phased` entries are present and the current time falls inside a phase window, those weights override everything else.
+- Finally, if no rule applies, the SDK falls back to the variant marked with `"default": true`.
+
+When calling `chatCompletion`, pass `userId` (for deterministic hashing) and `tags` to participate in routing:
+
+```typescript
+const response = await promptuna.chatCompletion(
+  'greeting',
+  { name: 'Alice' },
+  { userId: 'alice123', tags: ['US'] }
+);
+```

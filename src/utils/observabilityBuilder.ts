@@ -9,6 +9,10 @@ interface BuilderInit {
   /** Variant may be unknown at construction time */
   variantId?: string;
   routingReason: PromptunaObservability['routingReason'];
+  /** Tags that influenced routing (if any) */
+  routingTags?: string[];
+  /** Experiment context for weighted selection */
+  experimentContext?: PromptunaObservability['experimentContext'];
   emit?: (evt: PromptunaObservability) => void;
 }
 
@@ -31,6 +35,9 @@ export class ObservabilityBuilder {
     | 'fallbackUsed'
     | 'fallbacks'
     | 'variantId'
+    | 'routingReason'
+    | 'routingTags'
+    | 'experimentContext'
   >;
 
   // Mutable pieces that are filled as we progress through execution
@@ -39,6 +46,9 @@ export class ObservabilityBuilder {
   private providerRequestId?: string;
   private tokenUsage?: TokenUsage;
   private variantId: string;
+  private experimentContext?: PromptunaObservability['experimentContext'];
+  private routingReason: PromptunaObservability['routingReason'];
+  private routingTags?: string[];
 
   constructor(init: BuilderInit) {
     this.emit = init.emit;
@@ -49,10 +59,28 @@ export class ObservabilityBuilder {
       sdkVersion: init.sdkVersion,
       environment: init.environment,
       promptId: init.promptId,
-      routingReason: init.routingReason,
+      // routing fields will be added dynamically on build so keep minimal here
     } as const;
 
     this.variantId = init.variantId ?? 'unknown';
+    this.routingReason = init.routingReason;
+    this.routingTags = init.routingTags;
+    this.experimentContext = init.experimentContext;
+  }
+
+  /* ------------------------- routing setters ------------------------- */
+  setRouting(
+    reason: PromptunaObservability['routingReason'],
+    tags?: string[]
+  ): void {
+    this.routingReason = reason;
+    this.routingTags = tags;
+  }
+
+  setExperimentContext(
+    ctx?: PromptunaObservability['experimentContext']
+  ): void {
+    this.experimentContext = ctx;
   }
 
   /* ------------------------- stage markers ------------------------- */
@@ -96,6 +124,9 @@ export class ObservabilityBuilder {
   buildSuccess(): PromptunaObservability {
     const event: PromptunaObservability = {
       ...this.baseStatic,
+      routingReason: this.routingReason,
+      routingTags: this.routingTags,
+      experimentContext: this.experimentContext,
       provider: this.provider ?? 'unknown',
       model: this.model ?? 'unknown',
       providerRequestId: this.providerRequestId,
@@ -113,6 +144,9 @@ export class ObservabilityBuilder {
   buildError(error: any): PromptunaObservability {
     const event: PromptunaObservability = {
       ...this.baseStatic,
+      routingReason: this.routingReason,
+      routingTags: this.routingTags,
+      experimentContext: this.experimentContext,
       provider: this.provider ?? 'unknown',
       model: this.model ?? 'unknown',
       providerRequestId: this.providerRequestId,

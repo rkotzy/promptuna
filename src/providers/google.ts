@@ -18,15 +18,15 @@ export class GoogleProvider implements Provider {
 
     try {
       // @ts-ignore - Optional dependency
-      const { GoogleGenerativeAI } = await import('@google/generative-ai');
-      this.genAI = new GoogleGenerativeAI(this.apiKey);
+      const { GoogleGenAI } = await import('@google/genai');
+      this.genAI = new GoogleGenAI({ apiKey: this.apiKey });
     } catch (error: any) {
       if (
         error.code === 'MODULE_NOT_FOUND' ||
         error.message?.includes('Cannot find module')
       ) {
         throw new Error(
-          'Google Generative AI SDK not installed. Please run: npm install @google/generative-ai'
+          'Google GenAI SDK not installed. Please run: npm install @google/genai'
         );
       }
       throw error;
@@ -60,7 +60,7 @@ export class GoogleProvider implements Provider {
       const response = await result.response;
 
       return {
-        id: `gen_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: response.responseId,
         model: options.model,
         choices: [
           {

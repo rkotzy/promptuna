@@ -55,7 +55,7 @@ export class AnthropicProvider implements Provider {
       });
 
       return {
-        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: response.id,
         model: options.model,
         choices: [
           {

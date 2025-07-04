@@ -33,9 +33,9 @@
     "liquidjs": "^10.9.0"
   },
   "peerDependencies": {
-    "@anthropic-ai/sdk": "^0.24.3",
-    "@google/generative-ai": "^0.15.0",
-    "openai": "^4.0.0"
+    "@anthropic-ai/sdk": "^0.56.0",
+    "@google/genai": "^1.8.0",
+    "openai": "^5.8.2"
   },
   "peerDependenciesMeta": {
     "openai": {
@@ -44,7 +44,7 @@
     "@anthropic-ai/sdk": {
       "optional": true
     },
-    "@google/generative-ai": {
+    "@google/genai": {
       "optional": true
     }
   },

@@ -30,16 +30,16 @@ npm install openai
 npm install @anthropic-ai/sdk
 
 # For Google support (Gemini models)
-npm install @google/generative-ai
+npm install @google/genai
 ```
 
 ### Supported Versions
 
 Promptuna is tested with these provider SDK versions:
 
-- `openai`: ^4.0.0
-- `@anthropic-ai/sdk`: ^0.24.0
-- `@google/generative-ai`: ^0.15.0
+- `openai`: ^5.8.2
+- `@anthropic-ai/sdk`: ^0.56.0
+- `@google/genai`: ^1.8.0
 
 ## Quick Start
 
@@ -360,7 +360,7 @@ Error: OpenAI SDK not installed. Please run: npm install openai
 **Solution:** Install the required provider SDK:
 
 ```bash
-npm install openai  # or @anthropic-ai/sdk or @google/generative-ai
+npm install openai  # or @anthropic-ai/sdk or @google/genai
 ```
 
 ### API Key Not Provided
@@ -379,9 +379,9 @@ export OPENAI_API_KEY="your-key"
 
 If you see peer dependency warnings, make sure you're using compatible provider SDK versions:
 
-- OpenAI: ^4.0.0
-- Anthropic: ^0.24.0
-- Google: ^0.15.0
+- OpenAI: ^5.8.2
+- Anthropic: ^0.56.0
+- Google: ^1.8.0
 
 ## License
 

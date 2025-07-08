@@ -100,6 +100,7 @@ export class ConfigValidator {
       // Additional validation checks
       const typedConfig = config as PromptunaConfig;
       this.validateDefaultVariants(typedConfig);
+      this.validateResponseSchemas(typedConfig);
       this.validateRequiredParameters(typedConfig);
 
       return typedConfig;
@@ -152,6 +153,77 @@ export class ConfigValidator {
             defaultVariants: defaultVariants.map(([id]) => id),
           }
         );
+      }
+    }
+  }
+
+  /**
+   * Validates that schema references in responseFormat actually exist and are valid JSON Schemas
+   * @private
+   */
+  private validateResponseSchemas(config: PromptunaConfig): void {
+    // First, validate that all schemas in responseSchemas are valid JSON Schemas
+    if (config.responseSchemas) {
+      for (const [schemaId, schema] of Object.entries(config.responseSchemas)) {
+        try {
+          // Use AJV to validate the schema against JSON Schema meta-schema
+          this.ajv.validateSchema(schema);
+          if (this.ajv.errors) {
+            throw new ConfigurationError(
+              `Invalid JSON Schema in responseSchemas["${schemaId}"]`,
+              {
+                schemaId,
+                schemaErrors: this.ajv.errors.map(err => ({
+                  message: err.message,
+                  path: err.instancePath,
+                  keyword: err.keyword,
+                })),
+              }
+            );
+          }
+        } catch (error) {
+          if (error instanceof ConfigurationError) {
+            throw error;
+          }
+          throw new ConfigurationError(
+            `Failed to validate JSON Schema in responseSchemas["${schemaId}"]`,
+            {
+              schemaId,
+              error: error instanceof Error ? error.message : String(error),
+            }
+          );
+        }
+      }
+    }
+
+    // Then, validate that schema references exist and point to valid schemas
+    for (const [promptId, prompt] of Object.entries(config.prompts)) {
+      for (const [variantId, variant] of Object.entries(prompt.variants)) {
+        if (variant.responseFormat?.type === 'json_schema') {
+          const schemaRef = variant.responseFormat.schemaRef;
+          if (!schemaRef) {
+            throw new ConfigurationError(
+              `Variant "${variantId}" in prompt "${promptId}" has json_schema response format but missing schemaRef`,
+              {
+                promptId,
+                variantId,
+                responseFormat: variant.responseFormat,
+              }
+            );
+          }
+
+          if (!config.responseSchemas?.[schemaRef]) {
+            throw new ConfigurationError(
+              `Schema reference "${schemaRef}" not found in responseSchemas`,
+              {
+                promptId,
+                variantId,
+                schemaRef,
+                availableSchemas: Object.keys(config.responseSchemas || {}),
+              }
+            );
+          }
+        }
       }
     }
   }

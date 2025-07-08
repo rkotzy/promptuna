@@ -3,10 +3,14 @@ export interface ChatMessage {
   content: string;
 }
 
+import type { ResponseFormat } from '../types/config';
+
 export interface ChatCompletionOptions {
   messages: ChatMessage[];
   model: string;
   userId?: string;
+  responseFormat?: ResponseFormat;
+  responseSchema?: any; // Resolved JSON schema for json_schema type
   temperature?: number;
   max_tokens?: number;
   top_p?: number;

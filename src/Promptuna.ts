@@ -304,6 +304,11 @@ export class Promptuna {
       // Combine message history with template messages
       const chatMessages: ChatMessage[] = [...messageHistory, ...templateMessages];
 
+      // Get response schema if needed (validation guarantees it exists)
+      const responseSchema = variant.responseFormat?.type === 'json_schema' 
+        ? config.responseSchemas?.[variant.responseFormat.schemaRef!]
+        : undefined;
+
       const response = await executeWithFallback<ChatCompletionResponse>(
         targets,
         async (provider, target) => {
@@ -316,6 +321,8 @@ export class Promptuna {
             messages: chatMessages,
             model: target.model,
             userId,
+            responseFormat: variant.responseFormat,
+            responseSchema,
             ...providerParams,
           };
 

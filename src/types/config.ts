@@ -47,7 +47,7 @@ export interface ModelParams {
 }
 
 export interface ResponseFormat {
-  type: 'json_schema' | 'raw_text' | 'xml' | 'markdown';
+  type: 'json_schema' | 'raw_text';
   schemaRef?: string;
 }
 

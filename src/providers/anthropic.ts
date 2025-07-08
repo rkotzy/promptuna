@@ -46,15 +46,37 @@ export class AnthropicProvider implements Provider {
       // Transform messages to Anthropic format
       const { system, messages } = this.transformMessages(options.messages);
 
-      const { model, messages: _omit, userId, ...rest } = options; // We _omit the original messages since using the transformMessages function above
+      const { model, messages: _omit, userId, responseFormat, responseSchema, ...rest } = options; // We _omit the original messages since using the transformMessages function above
 
-      const response = await this.client.messages.create({
+      const anthropicOptions: any = {
         model,
         messages,
         system,
         ...(userId && { metadata: { user_id: userId } }),
         ...rest,
-      });
+      };
+
+      // Handle structured response format using function calling
+      if (responseFormat?.type === 'json_schema' && responseSchema) {
+        anthropicOptions.tools = [{
+          name: 'structured_response',
+          description: 'Return structured response in the specified format',
+          input_schema: responseSchema,
+        }];
+        anthropicOptions.tool_choice = { type: 'tool', name: 'structured_response' };
+      }
+
+      const response = await this.client.messages.create(anthropicOptions);
+
+      // Handle structured response extraction from tool_use
+      let messageContent: string;
+      if (responseFormat?.type === 'json_schema' && response.content[0]?.type === 'tool_use') {
+        // Extract structured data from tool_use response
+        messageContent = JSON.stringify(response.content[0].input);
+      } else {
+        // Regular text response
+        messageContent = response.content[0].text;
+      }
 
       return {
         id: response.id,
@@ -63,7 +85,7 @@ export class AnthropicProvider implements Provider {
           {
             message: {
               role: 'assistant',
-              content: response.content[0].text,
+              content: messageContent,
             },
             finish_reason: response.stop_reason || 'stop',
             index: 0,

@@ -160,9 +160,17 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["json_schema", "raw_text", "xml", "markdown"]
+          "enum": ["json_schema", "raw_text"]
         },
         "schemaRef": { "$ref": "#/$defs/id" }
+      },
+      "if": {
+        "properties": {
+          "type": { "const": "json_schema" }
+        }
+      },
+      "then": {
+        "required": ["type", "schemaRef"]
       }
     },
 

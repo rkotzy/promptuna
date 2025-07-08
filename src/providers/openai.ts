@@ -43,14 +43,24 @@ export class OpenAIProvider implements Provider {
     }
 
     try {
-      const { model, messages, userId, ...rest } = options;
+      const { model, messages, userId, responseFormat, responseSchema, ...rest } = options;
 
-      const response = await this.client.chat.completions.create({
+      const openaiOptions: any = {
         model,
         messages,
         ...(userId && { user: userId }),
         ...rest,
-      });
+      };
+
+      // Handle structured response format
+      if (responseFormat?.type === 'json_schema' && responseSchema) {
+        openaiOptions.response_format = {
+          type: 'json_schema',
+          json_schema: responseSchema,
+        };
+      }
+
+      const response = await this.client.chat.completions.create(openaiOptions);
 
       return {
         id: response.id,

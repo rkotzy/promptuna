@@ -48,13 +48,19 @@ export class GoogleProvider implements Provider {
       // Transform messages to Google format
       const contents = this.transformMessages(options.messages);
 
-      const { model: _m, messages: _msgs, userId, ...rest } = options; // We dump messages and model since they're re-defined with above functions
+      const { model: _m, messages: _msgs, userId, responseFormat, responseSchema, ...rest } = options; // We dump messages and model since they're re-defined with above functions
+
+      const generationConfig: any = { ...rest };
+
+      // Handle structured response format
+      if (responseFormat?.type === 'json_schema' && responseSchema) {
+        generationConfig.responseSchema = responseSchema;
+        generationConfig.responseMimeType = 'application/json';
+      }
 
       const response = await model.generateContent({
         contents,
-        generationConfig: {
-          ...rest,
-        },
+        generationConfig,
       });
 
       const result = await response.response;

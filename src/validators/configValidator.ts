@@ -102,6 +102,7 @@ export class ConfigValidator {
       this.validateDefaultVariants(typedConfig);
       this.validateResponseSchemas(typedConfig);
       this.validateRequiredParameters(typedConfig);
+      this.validateWeightDistribution(typedConfig);
 
       return typedConfig;
     } catch (error) {
@@ -220,6 +221,48 @@ export class ConfigValidator {
                 variantId,
                 schemaRef,
                 availableSchemas: Object.keys(config.responseSchemas || {}),
+              }
+            );
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Validates that routing rules have meaningful weight distributions
+   * @private
+   */
+  private validateWeightDistribution(config: PromptunaConfig): void {
+    for (const [promptId, prompt] of Object.entries(config.prompts)) {
+      const rules = prompt.routing.rules;
+      
+      // Check if all weights are 0 in regular routing rules
+      const hasNonZeroWeight = rules.some(rule => (rule.weight ?? 100) > 0);
+      if (!hasNonZeroWeight) {
+        throw new ConfigurationError(
+          `Prompt "${promptId}" has all routing rules with weight 0. At least one rule must have weight > 0`,
+          { 
+            promptId, 
+            rules: rules.map(r => ({ target: r.target, weight: r.weight ?? 100 })) 
+          }
+        );
+      }
+      
+      // Check phased rules if they exist
+      if (prompt.routing.phased) {
+        for (const [phaseIndex, phasedRule] of prompt.routing.phased.entries()) {
+          const weights = Object.values(phasedRule.weights);
+          const hasNonZeroPhasedWeight = weights.some(weight => weight > 0);
+          
+          if (!hasNonZeroPhasedWeight) {
+            throw new ConfigurationError(
+              `Prompt "${promptId}" has phased rule ${phaseIndex} with all weights set to 0. At least one weight must be > 0`,
+              {
+                promptId,
+                phaseIndex,
+                phasedRule,
+                weights: phasedRule.weights,
               }
             );
           }

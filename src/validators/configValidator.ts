@@ -102,8 +102,9 @@ export class ConfigValidator {
       this.validateVersion(typedConfig);
       this.validateDefaultVariants(typedConfig);
       this.validateResponseSchemas(typedConfig);
+      this.validateRoutingConfiguration(typedConfig);
+      this.validateFallbackTargets(typedConfig);
       this.validateRequiredParameters(typedConfig);
-      this.validateWeightDistribution(typedConfig);
 
       return typedConfig;
     } catch (error) {
@@ -265,12 +266,29 @@ export class ConfigValidator {
   }
 
   /**
-   * Validates that routing rules have meaningful weight distributions
+   * Validates routing configuration including targets and weight distributions
    * @private
    */
-  private validateWeightDistribution(config: PromptunaConfig): void {
+  private validateRoutingConfiguration(config: PromptunaConfig): void {
     for (const [promptId, prompt] of Object.entries(config.prompts)) {
+      const variantIds = Object.keys(prompt.variants);
       const rules = prompt.routing.rules;
+      
+      // Validate regular routing rule targets and weights
+      for (const rule of rules) {
+        // Check target exists
+        if (!variantIds.includes(rule.target)) {
+          throw new ConfigurationError(
+            `Routing rule in prompt "${promptId}" targets non-existent variant "${rule.target}"`,
+            {
+              promptId,
+              invalidTarget: rule.target,
+              availableVariants: variantIds,
+              rule,
+            }
+          );
+        }
+      }
       
       // Check if all weights are 0 in regular routing rules
       const hasNonZeroWeight = rules.some(rule => (rule.weight ?? 100) > 0);
@@ -284,12 +302,30 @@ export class ConfigValidator {
         );
       }
       
-      // Check phased rules if they exist
+      // Validate phased rules if they exist
       if (prompt.routing.phased) {
         for (const [phaseIndex, phasedRule] of prompt.routing.phased.entries()) {
+          const weightKeys = Object.keys(phasedRule.weights);
           const weights = Object.values(phasedRule.weights);
-          const hasNonZeroPhasedWeight = weights.some(weight => weight > 0);
           
+          // Validate phased rule weight keys reference existing variants
+          for (const weightKey of weightKeys) {
+            if (!variantIds.includes(weightKey)) {
+              throw new ConfigurationError(
+                `Phased rule ${phaseIndex} in prompt "${promptId}" has weight for non-existent variant "${weightKey}"`,
+                {
+                  promptId,
+                  phaseIndex,
+                  invalidVariant: weightKey,
+                  availableVariants: variantIds,
+                  phasedRule,
+                }
+              );
+            }
+          }
+          
+          // Validate phased rule has meaningful weight distribution
+          const hasNonZeroPhasedWeight = weights.some(weight => weight > 0);
           if (!hasNonZeroPhasedWeight) {
             throw new ConfigurationError(
               `Prompt "${promptId}" has phased rule ${phaseIndex} with all weights set to 0. At least one weight must be > 0`,
@@ -300,6 +336,36 @@ export class ConfigValidator {
                 weights: phasedRule.weights,
               }
             );
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Validates that fallback targets reference existing provider IDs
+   * @private
+   */
+  private validateFallbackTargets(config: PromptunaConfig): void {
+    const providerIds = Object.keys(config.providers);
+    
+    for (const [promptId, prompt] of Object.entries(config.prompts)) {
+      for (const [variantId, variant] of Object.entries(prompt.variants)) {
+        if (variant.fallback) {
+          for (const [fallbackIndex, fallbackTarget] of variant.fallback.entries()) {
+            if (!providerIds.includes(fallbackTarget.provider)) {
+              throw new ConfigurationError(
+                `Fallback ${fallbackIndex} in variant "${variantId}" of prompt "${promptId}" references non-existent provider "${fallbackTarget.provider}"`,
+                {
+                  promptId,
+                  variantId,
+                  fallbackIndex,
+                  invalidProvider: fallbackTarget.provider,
+                  availableProviders: providerIds,
+                  fallbackTarget,
+                }
+              );
+            }
           }
         }
       }

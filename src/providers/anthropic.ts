@@ -46,12 +46,13 @@ export class AnthropicProvider implements Provider {
       // Transform messages to Anthropic format
       const { system, messages } = this.transformMessages(options.messages);
 
+      const { model, messages: _omit, ...rest } = options; // We _omit the original messages since using the transformMessages function above
+
       const response = await this.client.messages.create({
-        model: options.model,
-        messages: messages,
-        system: system,
-        max_tokens: options.max_tokens || 1024,
-        temperature: options.temperature,
+        model,
+        messages,
+        system,
+        ...rest,
       });
 
       return {

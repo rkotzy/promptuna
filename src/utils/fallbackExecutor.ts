@@ -25,7 +25,7 @@ export interface FallbackCallbackContext {
  */
 export async function executeWithFallback<T>(
   targets: ExecutionTarget[],
-  attempt: (provider: Provider, model: string) => Promise<T>,
+  attempt: (provider: Provider, target: ExecutionTarget) => Promise<T>,
   getProvider: (providerType: string) => Provider,
   onAttempt?: (ctx: FallbackCallbackContext) => void
 ): Promise<T> {
@@ -35,7 +35,7 @@ export async function executeWithFallback<T>(
     const provider = getProvider(target.providerType);
 
     try {
-      const result = await attempt(provider, target.model);
+      const result = await attempt(provider, target);
       // Success – notify callback without error and exit
       onAttempt?.({ target });
       return result;

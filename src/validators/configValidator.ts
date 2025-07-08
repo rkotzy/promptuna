@@ -100,6 +100,7 @@ export class ConfigValidator {
       // Additional validation checks
       const typedConfig = config as PromptunaConfig;
       this.validateDefaultVariants(typedConfig);
+      this.validateRequiredParameters(typedConfig);
 
       return typedConfig;
     } catch (error) {
@@ -151,6 +152,38 @@ export class ConfigValidator {
             defaultVariants: defaultVariants.map(([id]) => id),
           }
         );
+      }
+    }
+  }
+
+  /**
+   * Ensures each variant includes mandatory parameters for its provider.
+   * For the MVP this is a hard-coded minimal list.
+   */
+  private validateRequiredParameters(config: PromptunaConfig): void {
+    // Minimal hard-coded rules per provider type.
+    const REQUIRED: Record<string, string[]> = {
+      openai: [],
+      anthropic: ['max_tokens'],
+      google: [],
+    };
+
+    for (const [promptId, prompt] of Object.entries(config.prompts)) {
+      for (const [variantId, variant] of Object.entries(prompt.variants)) {
+        const provider = config.providers[variant.provider];
+        if (!provider) continue; // global provider definition missing
+
+        const needed = REQUIRED[provider.type] ?? [];
+        if (needed.length === 0) continue; // nothing to validate for this provider
+
+        const params = variant.parameters ?? {};
+        const missing = needed.filter(key => !(key in params));
+
+        if (missing.length) {
+          throw new ConfigurationError(
+            `Variant "${variantId}" of prompt "${promptId}" is missing required parameter(s) for provider "${provider.type}": ${missing.join(', ')}`
+          );
+        }
       }
     }
   }

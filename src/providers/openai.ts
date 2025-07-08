@@ -43,11 +43,12 @@ export class OpenAIProvider implements Provider {
     }
 
     try {
+      const { model, messages, ...rest } = options;
+
       const response = await this.client.chat.completions.create({
-        model: options.model,
-        messages: options.messages,
-        temperature: options.temperature,
-        max_tokens: options.max_tokens,
+        model,
+        messages,
+        ...rest,
       });
 
       return {

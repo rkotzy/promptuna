@@ -41,7 +41,9 @@ export interface ModelParams {
   presence_penalty?: number;
   stop?: string | string[];
   json_mode?: boolean;
-  [key: string]: number | string | boolean | string[] | undefined;
+  top_k?: number;
+  candidate_count?: number;
+  logit_bias?: Record<string, number>;
 }
 
 export interface ResponseFormat {

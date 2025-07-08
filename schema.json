@@ -113,18 +113,23 @@
 
     "modelParams": {
       "type": "object",
-      "additionalProperties": { "type": ["number", "string", "boolean"] },
+      "additionalProperties": false,
       "properties": {
-        "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
+        "temperature": { "type": "number", "minimum": 0, "maximum": 1 },
         "max_tokens": { "type": "integer", "minimum": 1 },
         "top_p": { "type": "number", "minimum": 0, "maximum": 1 },
-        "frequency_penalty": { "type": "number" },
-        "presence_penalty": { "type": "number" },
+        "frequency_penalty": { "type": "number", "minimum": -2, "maximum": 2 },
+        "presence_penalty": { "type": "number", "minimum": -2, "maximum": 2 },
         "stop": {
-          "type": ["string", "array"],
+          "type": "array",
+          "maxItems": 4,
           "items": { "type": "string" }
         },
-        "json_mode": { "type": "boolean" }
+        "logit_bias": {
+          "type": "object",
+          "additionalProperties": { "type": "integer" },
+          "description": "Bias the likelihood of specified tokens (OpenAI)"
+        }
       }
     },
 
@@ -240,7 +245,7 @@
         "map": {
           "type": "object",
           "additionalProperties": { "type": "string" },
-          "description": "Key mapping: downstreamVar ← JSON-path into prior step’s response."
+          "description": "Key mapping: downstreamVar ← JSON-path into prior step's response."
         }
       }
     }

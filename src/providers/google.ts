@@ -46,38 +46,37 @@ export class GoogleProvider implements Provider {
       const model = this.genAI.getGenerativeModel({ model: options.model });
 
       // Transform messages to Google format
-      const { history, lastMessage } = this.transformMessages(options.messages);
+      const contents = this.transformMessages(options.messages);
 
-      const chat = model.startChat({
-        history: history,
+      const { model: _m, messages: _msgs, ...rest } = options; // We dump messages and model since they're re-defined with above functions
+
+      const response = await model.generateContent({
+        contents,
         generationConfig: {
-          temperature: options.temperature,
-          maxOutputTokens: options.max_tokens,
+          ...rest,
         },
       });
 
-      const result = await chat.sendMessage(lastMessage);
-      const response = await result.response;
+      const result = await response.response;
 
       return {
-        id: response.responseId,
+        id: result.responseId,
         model: options.model,
         choices: [
           {
             message: {
               role: 'assistant',
-              content: response.text(),
+              content: result.text(),
             },
             finish_reason: 'stop',
             index: 0,
           },
         ],
-        usage: response.usageMetadata
+        usage: result.usageMetadata
           ? {
-              prompt_tokens: response.usageMetadata.promptTokenCount || 0,
-              completion_tokens:
-                response.usageMetadata.candidatesTokenCount || 0,
-              total_tokens: response.usageMetadata.totalTokenCount || 0,
+              prompt_tokens: result.usageMetadata.promptTokenCount || 0,
+              completion_tokens: result.usageMetadata.candidatesTokenCount || 0,
+              total_tokens: result.usageMetadata.totalTokenCount || 0,
             }
           : undefined,
       };
@@ -109,31 +108,23 @@ export class GoogleProvider implements Provider {
     const systemMessages = messages.filter(msg => msg.role === 'system');
     const conversationMessages = messages.filter(msg => msg.role !== 'system');
 
-    // Combine system messages with first user message for Google
-    let history: Array<{ role: string; parts: string }> = [];
-    let lastMessage = '';
-
-    for (let i = 0; i < conversationMessages.length; i++) {
-      const msg = conversationMessages[i];
+    // Convert messages to Google format
+    const contents = conversationMessages.map((msg, index) => {
       const googleRole = msg.role === 'assistant' ? 'model' : 'user';
-
       let content = msg.content;
-      if (i === 0 && systemMessages.length > 0) {
-        // Prepend system message to first user message
+
+      // Prepend system message to first user message if system messages exist
+      if (index === 0 && msg.role === 'user' && systemMessages.length > 0) {
         const systemContent = systemMessages.map(s => s.content).join('\n\n');
         content = `${systemContent}\n\n${content}`;
       }
 
-      if (i === conversationMessages.length - 1) {
-        lastMessage = content;
-      } else {
-        history.push({
-          role: googleRole,
-          parts: content,
-        });
-      }
-    }
+      return {
+        role: googleRole,
+        parts: [{ text: content }],
+      };
+    });
 
-    return { history, lastMessage };
+    return contents;
   }
 }

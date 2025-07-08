@@ -24,6 +24,8 @@ import { ObservabilityBuilder } from './utils/observabilityBuilder';
 import type { ChatInvokeOptions } from './types/invokeOptions';
 import { selectVariant } from './utils/variantSelector';
 import { executeWithFallback } from './utils/fallbackExecutor';
+import { buildProviderParams } from './utils/normalizeParameters';
+import type { ProviderId } from './providers/providerCapabilities';
 
 export class Promptuna {
   private configPath: string;
@@ -309,12 +311,16 @@ export class Promptuna {
 
       const response = await executeWithFallback<ChatCompletionResponse>(
         targets,
-        async (provider, model) => {
+        async (provider, target) => {
+          const providerParams = buildProviderParams(
+            target.providerType as ProviderId,
+            variant.parameters ?? {}
+          );
+
           const options: ChatCompletionOptions = {
             messages: chatMessages,
-            model,
-            temperature: variant.parameters?.temperature,
-            max_tokens: variant.parameters?.max_tokens,
+            model: target.model,
+            ...providerParams,
           };
 
           const res = await provider.chatCompletion(options);

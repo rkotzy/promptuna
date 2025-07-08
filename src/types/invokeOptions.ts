@@ -1,8 +1,12 @@
+import type { ChatMessage } from '../providers/types';
+
 export interface ChatCompletionParams {
   /** The ID of the prompt */
   promptId: string;
   /** Variables to interpolate into the template */
   variables?: Record<string, any>;
+  /** Conversation history to prepend to the prompt (e.g., previous messages) */
+  messageHistory?: ChatMessage[];
   /** Stable identifier used to hash into deterministic traffic buckets */
   userId?: string;
   /** Tags that describe the request context (e.g., geography, experiment flags) */

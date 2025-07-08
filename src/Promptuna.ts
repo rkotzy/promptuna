@@ -204,7 +204,7 @@ export class Promptuna {
   async chatCompletion(
     params: ChatCompletionParams
   ): Promise<ChatCompletionResponse> {
-    const { promptId, variables = {}, userId, tags = [], unixTime = Math.floor(Date.now() / 1000) } = params;
+    const { promptId, variables = {}, messageHistory = [], userId, tags = [], unixTime = Math.floor(Date.now() / 1000) } = params;
 
     // Observability builder created at function start to capture full E2E timing
     const obsBuilder = new ObservabilityBuilder({
@@ -295,11 +295,14 @@ export class Promptuna {
         };
       });
 
-      // Transform messages once – reused for all attempts
-      const chatMessages: ChatMessage[] = messages.map(msg => ({
+      // Transform rendered template messages to ChatMessage format
+      const templateMessages: ChatMessage[] = messages.map(msg => ({
         role: msg.role,
         content: msg.content,
       }));
+
+      // Combine message history with template messages
+      const chatMessages: ChatMessage[] = [...messageHistory, ...templateMessages];
 
       const response = await executeWithFallback<ChatCompletionResponse>(
         targets,

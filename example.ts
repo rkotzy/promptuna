@@ -144,6 +144,25 @@ async function main() {
         console.log(
           `  Content: ${responseFallback.choices[0].message.content}`
         );
+
+        // Example 4: Message history for conversation context
+        console.log('\n--- Message History Demo ---');
+        const historyResponse = await promptuna.chatCompletion({
+          promptId: 'greeting',
+          variables: { name: 'Sam' },
+          messageHistory: [
+            { role: 'user', content: 'Hello, I need help with my account' },
+            { role: 'assistant', content: 'I would be happy to help you with your account. What specific issue are you experiencing?' },
+            { role: 'user', content: 'I forgot my password' }
+          ],
+          userId: 'user-history-demo'
+        });
+
+        console.log('\n🔹 With conversation history:');
+        console.log(`  Model: ${historyResponse.model}`);
+        console.log(`  Content: ${historyResponse.choices[0].message.content}`);
+        console.log(`  (Note: Response includes context from previous messages)`);
+
       } catch (chatError) {
         console.log('\n⚠️  Chat completion failed:');
         console.log(

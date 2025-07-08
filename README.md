@@ -157,6 +157,17 @@ const response = await promptuna.chatCompletion({
   variables: { name: 'Alice' },
   userId: 'alice123'
 });
+
+// With conversation history
+const response = await promptuna.chatCompletion({
+  promptId: 'follow-up',
+  variables: { topic: 'weather' },
+  messageHistory: [
+    { role: 'user', content: 'Hello, how are you?' },
+    { role: 'assistant', content: 'I am doing well, thank you!' }
+  ],
+  userId: 'alice123'
+});
 ```
 
 #### `getTemplate(params)`

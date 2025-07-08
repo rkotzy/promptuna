@@ -21,7 +21,7 @@ import { AnthropicProvider } from './providers/anthropic';
 import { GoogleProvider } from './providers/google';
 import { Provider } from './providers/types';
 import { ObservabilityBuilder } from './utils/observabilityBuilder';
-import type { ChatInvokeOptions } from './types/invokeOptions';
+import type { ChatCompletionParams, GetTemplateParams } from './types/invokeOptions';
 import { selectVariant } from './utils/variantSelector';
 import { executeWithFallback } from './utils/fallbackExecutor';
 import { buildProviderParams } from './utils/normalizeParameters';
@@ -90,18 +90,15 @@ export class Promptuna {
 
   /**
    * Gets a template with variables interpolated
-   * @param promptId The ID of the prompt
-   * @param variantId The ID of the variant within the prompt (optional - uses default if not provided)
-   * @param variables Variables to interpolate into the template
+   * @param params Parameters for getting the template
    * @returns Array of rendered messages with content ready for LLM
    * @throws ExecutionError if prompt/variant not found or invalid message format
    * @throws TemplateError if template processing fails
    */
   async getTemplate(
-    promptId: string,
-    variantId: string,
-    variables: Record<string, any> = {}
+    params: GetTemplateParams
   ): Promise<RenderedMessage[]> {
+    const { promptId, variantId, variables = {} } = params;
     const config = await this.getConfig();
 
     // Validate prompt & variant
@@ -200,19 +197,14 @@ export class Promptuna {
 
   /**
    * Execute chat completion for a prompt (uses default variant)
-   * @param promptId The ID of the prompt
-   * @param variables Variables to interpolate into the template
+   * @param params Parameters for the chat completion
    * @returns The chat completion response from the LLM provider
    * @throws ExecutionError if prompt not found or provider fails
    */
   async chatCompletion(
-    promptId: string,
-    variables: Record<string, any> = {},
-    opts: ChatInvokeOptions = {}
+    params: ChatCompletionParams
   ): Promise<ChatCompletionResponse> {
-    const userId = opts.userId;
-    const tags = opts.tags ?? [];
-    const now = opts.unixTime ?? Math.floor(Date.now() / 1000);
+    const { promptId, variables = {}, userId, tags = [], unixTime = Math.floor(Date.now() / 1000) } = params;
 
     // Observability builder created at function start to capture full E2E timing
     const obsBuilder = new ObservabilityBuilder({
@@ -246,7 +238,7 @@ export class Promptuna {
         variant,
         reason,
         weightPicked,
-      } = selectVariant(prompt, promptId, { userId, tags, now });
+      } = selectVariant({ prompt, promptId, userId, tags, now: unixTime });
 
       variantId = selectedId; // for error paths
 
@@ -262,7 +254,7 @@ export class Promptuna {
       }
 
       // Render template
-      const messages = await this.getTemplate(promptId, selectedId, variables);
+      const messages = await this.getTemplate({ promptId, variantId: selectedId, variables });
       obsBuilder.markTemplate();
 
       // ---------------------- fallback execution ----------------------

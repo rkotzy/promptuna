@@ -12,4 +12,4 @@ export type {
   Provider,
 } from './providers/types';
 
-export type { ChatInvokeOptions } from './types/invokeOptions';
+export type { ChatCompletionParams, GetTemplateParams } from './types/invokeOptions';

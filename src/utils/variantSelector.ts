@@ -9,7 +9,9 @@ export interface VariantSelection {
   weightPicked?: number;
 }
 
-interface SelectorOpts {
+export interface VariantSelectorParams {
+  prompt: Prompt;
+  promptId: string;
   userId?: string;
   tags?: string[];
   /** Unix timestamp in seconds */
@@ -59,10 +61,9 @@ function validateAndGetVariant(
 }
 
 export function selectVariant(
-  prompt: Prompt,
-  promptId: string,
-  { userId, tags = [], now = Math.floor(Date.now() / 1000) }: SelectorOpts = {}
+  params: VariantSelectorParams
 ): VariantSelection {
+  const { prompt, promptId, userId, tags = [], now = Math.floor(Date.now() / 1000) } = params;
   const routing = prompt.routing ?? {};
   const rules: RoutingRule[] = routing.rules ?? [];
 

@@ -112,11 +112,12 @@ async function main() {
 
   try {
     // Generate a chat completion
-    const response = await promptuna.chatCompletion(
-      'greeting', // Prompt ID
-      { name: 'Alice' }, // Template variables
-      { userId: 'alice123', tags: ['US'] } // Optional routing context
-    );
+    const response = await promptuna.chatCompletion({
+      promptId: 'greeting',
+      variables: { name: 'Alice' },
+      userId: 'alice123',
+      tags: ['US']
+    });
 
     console.log(response.choices[0].message.content);
     // Output: "Hello Alice! How can I help you today?"
@@ -146,25 +147,27 @@ new Promptuna(config: PromptunaRuntimeConfig)
 
 ### Methods
 
-#### `chatCompletion(promptId, variables, options?)`
+#### `chatCompletion(params)`
 
 Execute a chat completion using the specified prompt variant.
 
 ```typescript
-const response = await promptuna.chatCompletion(
-  'greeting', // Prompt ID from config
-  { name: 'Alice' }, // Variables for template interpolation
-  { userId: 'alice123' } // Optional routing options (tags, userId)
-);
+const response = await promptuna.chatCompletion({
+  promptId: 'greeting',
+  variables: { name: 'Alice' },
+  userId: 'alice123'
+});
 ```
 
-#### `getVariantTemplate(promptId, variantId, variables)`
+#### `getTemplate(params)`
 
 Get rendered messages without making an API call (useful for testing templates).
 
 ```typescript
-const messages = await promptuna.getVariantTemplate('greeting', 'gpt4', {
-  name: 'Alice',
+const messages = await promptuna.getTemplate({
+  promptId: 'greeting',
+  variantId: 'gpt4',
+  variables: { name: 'Alice' }
 });
 // Returns: [{ role: 'system', content: '...' }, { role: 'user', content: 'Say hello to Alice!' }]
 ```
@@ -192,16 +195,19 @@ const promptuna = new Promptuna({
 });
 
 // Use different providers for the same prompt
-const gptResponse = await promptuna.chatCompletion('summary', {
-  text: 'Long text...',
+const gptResponse = await promptuna.chatCompletion({
+  promptId: 'summary',
+  variables: { text: 'Long text...' }
 });
 
 // The provider will be selected via routing rules
-const claudeResponse = await promptuna.chatCompletion('summary', {
-  text: 'Long text...',
+const claudeResponse = await promptuna.chatCompletion({
+  promptId: 'summary',
+  variables: { text: 'Long text...' }
 });
-const geminiResponse = await promptuna.chatCompletion('summary', {
-  text: 'Long text...',
+const geminiResponse = await promptuna.chatCompletion({
+  promptId: 'summary',
+  variables: { text: 'Long text...' }
 });
 ```
 
@@ -288,9 +294,12 @@ Promptuna uses the Liquid template engine for variable interpolation:
 ```
 
 ```typescript
-const response = await promptuna.chatCompletion('greeting', {
-  name: 'Alice',
-  date: '2024-01-15',
+const response = await promptuna.chatCompletion({
+  promptId: 'greeting',
+  variables: {
+    name: 'Alice',
+    date: '2024-01-15',
+  }
 });
 ```
 
@@ -298,7 +307,10 @@ const response = await promptuna.chatCompletion('greeting', {
 
 ```typescript
 try {
-  const response = await promptuna.chatCompletion('prompt', {});
+  const response = await promptuna.chatCompletion({
+  promptId: 'prompt',
+  variables: {}
+});
 } catch (error) {
   if (error.message.includes('API key not provided')) {
     console.log('Set your API keys as environment variables');
@@ -422,9 +434,10 @@ Promptuna supports sophisticated routing logic out of the box. The snippet below
 When calling `chatCompletion`, pass `userId` (for deterministic hashing) and `tags` to participate in routing:
 
 ```typescript
-const response = await promptuna.chatCompletion(
-  'greeting',
-  { name: 'Alice' },
-  { userId: 'alice123', tags: ['US'] }
-);
+const response = await promptuna.chatCompletion({
+  promptId: 'greeting',
+  variables: { name: 'Alice' },
+  userId: 'alice123',
+  tags: ['US']
+});
 ```

@@ -34,11 +34,11 @@ async function main() {
 
     // Simple variable example - uses default variant
     const simpleVariables = { name: 'Alice' };
-    const simpleMessages = await promptuna.getTemplate(
-      'greeting',
-      'v_default', // Specify concrete default variant
-      simpleVariables
-    );
+    const simpleMessages = await promptuna.getTemplate({
+      promptId: 'greeting',
+      variantId: 'v_default', // Specify concrete default variant
+      variables: simpleVariables
+    });
 
     console.log("\n🔹 Simple template (name: 'Alice'):");
     simpleMessages.forEach((msg, i) => {
@@ -58,11 +58,11 @@ async function main() {
       },
     };
 
-    const complexMessages = await promptuna.getTemplate(
-      'greeting',
-      'v_us', // Specific variant
-      complexVariables
-    );
+    const complexMessages = await promptuna.getTemplate({
+      promptId: 'greeting',
+      variantId: 'v_us', // Specific variant
+      variables: complexVariables
+    });
 
     console.log('\n🔹 Complex template (nested objects):');
     complexMessages.forEach((msg, i) => {
@@ -75,31 +75,33 @@ async function main() {
 
       try {
         // Example 1: Tag-based routing (US)
-        const responseUS = await promptuna.chatCompletion(
-          'greeting',
-          { name: 'Charlie', city: 'New York' },
-          { userId: 'user-us-123', tags: ['US'] }
-        );
+        const responseUS = await promptuna.chatCompletion({
+          promptId: 'greeting',
+          variables: { name: 'Charlie', city: 'New York' },
+          userId: 'user-us-123',
+          tags: ['US']
+        });
         console.log('\n🔹 US tag (user-us-123):');
         console.log(`  Model: ${responseUS.model}`);
         console.log(`  Content: ${responseUS.choices[0].message.content}`);
 
         // Example 2: Tag-based routing (beta)
-        const responseBeta = await promptuna.chatCompletion(
-          'greeting',
-          { name: 'Dana', city: 'Austin' },
-          { userId: 'user-beta-456', tags: ['beta'] }
-        );
+        const responseBeta = await promptuna.chatCompletion({
+          promptId: 'greeting',
+          variables: { name: 'Dana', city: 'Austin' },
+          userId: 'user-beta-456',
+          tags: ['beta']
+        });
         console.log('\n🔹 Beta tag (user-beta-456):');
         console.log(`  Model: ${responseBeta.model}`);
         console.log(`  Content: ${responseBeta.choices[0].message.content}`);
 
         // Example 3: No tags (weight distribution)
-        const responseNoTag = await promptuna.chatCompletion(
-          'greeting',
-          { name: 'Eve', city: 'London' },
-          { userId: 'user-general-789' } // no tags provided
-        );
+        const responseNoTag = await promptuna.chatCompletion({
+          promptId: 'greeting',
+          variables: { name: 'Eve', city: 'London' },
+          userId: 'user-general-789' // no tags provided
+        });
         console.log('\n🔹 No tag (user-general-789):');
         console.log(`  Model: ${responseNoTag.model}`);
         console.log(`  Content: ${responseNoTag.choices[0].message.content}`);
@@ -129,11 +131,11 @@ async function main() {
         (promptuna as any).providers.set('openai', new AlwaysRateLimited());
 
         // Make another call – fallback should activate automatically
-        const responseFallback = await promptuna.chatCompletion(
-          'greeting',
-          { name: 'Frank', city: 'Paris' },
-          { userId: 'user-fallback-999' }
-        );
+        const responseFallback = await promptuna.chatCompletion({
+          promptId: 'greeting',
+          variables: { name: 'Frank', city: 'Paris' },
+          userId: 'user-fallback-999'
+        });
 
         console.log(
           '\n🔹 Forced error — fallback engaged (user-fallback-999):'

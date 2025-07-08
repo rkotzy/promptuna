@@ -43,11 +43,12 @@ export class OpenAIProvider implements Provider {
     }
 
     try {
-      const { model, messages, ...rest } = options;
+      const { model, messages, userId, ...rest } = options;
 
       const response = await this.client.chat.completions.create({
         model,
         messages,
+        ...(userId && { user: userId }),
         ...rest,
       });
 

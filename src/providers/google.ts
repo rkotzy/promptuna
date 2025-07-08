@@ -48,7 +48,7 @@ export class GoogleProvider implements Provider {
       // Transform messages to Google format
       const contents = this.transformMessages(options.messages);
 
-      const { model: _m, messages: _msgs, ...rest } = options; // We dump messages and model since they're re-defined with above functions
+      const { model: _m, messages: _msgs, userId, ...rest } = options; // We dump messages and model since they're re-defined with above functions
 
       const response = await model.generateContent({
         contents,

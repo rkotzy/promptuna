@@ -312,6 +312,7 @@ export class Promptuna {
           const options: ChatCompletionOptions = {
             messages: chatMessages,
             model: target.model,
+            userId,
             ...providerParams,
           };
 

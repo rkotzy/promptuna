@@ -99,6 +99,7 @@ export class ConfigValidator {
 
       // Additional validation checks
       const typedConfig = config as PromptunaConfig;
+      this.validateVersion(typedConfig);
       this.validateDefaultVariants(typedConfig);
       this.validateResponseSchemas(typedConfig);
       this.validateRequiredParameters(typedConfig);
@@ -226,6 +227,40 @@ export class ConfigValidator {
           }
         }
       }
+    }
+  }
+
+  /**
+   * Validates that the configuration version is supported
+   * Uses semantic versioning where only major version incompatibilities are breaking
+   * @private
+   */
+  private validateVersion(config: PromptunaConfig): void {
+    const SUPPORTED_MAJOR_VERSIONS = [1];
+    
+    // Parse semantic version (e.g., "1.2.3" -> { major: 1, minor: 2, patch: 3 })
+    const versionMatch = config.version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+    if (!versionMatch) {
+      throw new ConfigurationError(
+        `Invalid version format: ${config.version}. Expected semantic version (e.g., "1.0.0")`,
+        {
+          version: config.version,
+          expectedFormat: "X.Y.Z (semantic versioning)",
+        }
+      );
+    }
+    
+    const majorVersion = parseInt(versionMatch[1], 10);
+    
+    if (!SUPPORTED_MAJOR_VERSIONS.includes(majorVersion)) {
+      throw new ConfigurationError(
+        `Unsupported major version: ${majorVersion}. This SDK supports major version(s): ${SUPPORTED_MAJOR_VERSIONS.join(', ')}`,
+        {
+          version: config.version,
+          majorVersion,
+          supportedMajorVersions: SUPPORTED_MAJOR_VERSIONS,
+        }
+      );
     }
   }
 

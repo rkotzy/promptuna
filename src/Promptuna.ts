@@ -1,31 +1,32 @@
 import { resolve } from 'path';
 import packageJson from '../package.json';
-import type { PromptunaObservability } from './types/observability';
-import { ConfigValidator } from './validators/configValidator';
+import type { PromptunaObservability } from './observability/types';
+import { ConfigValidator } from './config/validator';
 import {
   PromptunaConfig,
   PromptunaRuntimeConfig,
-  RenderedMessage,
   ExecutionError,
   Variant,
   Prompt,
-} from './types/config';
-import { TemplateProcessor } from './processors/templateProcessor';
+  ChatCompletionParams,
+  GetTemplateParams,
+} from './config/types';
+import { RenderedMessage } from './templates/types';
+import { TemplateProcessor } from './templates/processor';
 import {
   ChatCompletionOptions,
   ChatCompletionResponse,
   ChatMessage,
+  Provider,
 } from './providers/types';
 import { OpenAIProvider } from './providers/openai';
 import { AnthropicProvider } from './providers/anthropic';
 import { GoogleProvider } from './providers/google';
-import { Provider } from './providers/types';
-import { ObservabilityBuilder } from './utils/observabilityBuilder';
-import type { ChatCompletionParams, GetTemplateParams } from './types/invokeOptions';
-import { selectVariant } from './utils/variantSelector';
-import { executeWithFallback } from './utils/fallbackExecutor';
-import { buildProviderParams } from './utils/normalizeParameters';
-import type { ProviderId } from './providers/providerCapabilities';
+import { ObservabilityBuilder } from './observability/builder';
+import { selectVariant } from './routing/selector';
+import { executeWithFallback } from './fallbacks/executor';
+import { buildProviderParams } from './shared/utils/normalizeParameters';
+import type { ProviderId } from './shared/types';
 
 export class Promptuna {
   private configPath: string;

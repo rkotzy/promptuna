@@ -1,17 +1,5 @@
 import { performance } from 'node:perf_hooks';
-
-export interface Timings {
-  /** End-to-end duration – automatically filled */
-  total: number;
-  /** Time spent rendering Liquid templates */
-  template?: number;
-  /** Time spent waiting for provider response */
-  provider?: number;
-  /** Number of retries that occurred */
-  retries?: number;
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  [key: string]: number | undefined;
-}
+import type { Timings } from './types';
 
 /**
  * Simple helper for recording stage durations. Create once at the start of an operation,

@@ -340,20 +340,18 @@ promptuna/
 ├── src/
 │   ├── index.ts                 # Main exports
 │   ├── Promptuna.ts            # Core SDK class
-│   ├── providers/
-│   │   ├── types.ts            # Provider interfaces
-│   │   ├── openai.ts           # OpenAI implementation
-│   │   ├── anthropic.ts        # Anthropic implementation
-│   │   └── google.ts           # Google implementation
-│   ├── validators/
-│   │   └── configValidator.ts  # Schema validation
-│   ├── processors/
-│   │   └── templateProcessor.ts # Template processing
-│   └── types/
-│       └── config.ts           # TypeScript types
-├── schema.json                 # Configuration schema
+│   ├── config/                 # Configuration management and validation
+│   ├── providers/              # LLM provider implementations (OpenAI, Anthropic, Google)
+│   ├── routing/                # Variant selection and A/B testing logic
+│   ├── templates/              # Liquid template processing
+│   ├── observability/          # Telemetry and analytics
+│   ├── responses/              # Response format definitions
+│   ├── fallbacks/              # Error recovery and provider redundancy
+│   └── shared/                 # Common utilities and types
+├── schema.json                 # JSON Schema for configuration validation
 ├── promptuna-example.json      # Example configuration
-└── example.ts                  # Usage example
+├── example.ts                  # Usage example
+└── package.json
 ```
 
 ## Development

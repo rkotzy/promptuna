@@ -3,16 +3,8 @@ import addFormats from 'ajv-formats';
 import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { PromptunaConfig, ConfigurationError, Variant } from '../types/config';
+import { PromptunaConfig, ConfigurationError, ValidationResult, Variant } from './types';
 
-export interface ValidationResult {
-  valid: boolean;
-  errors?: Array<{
-    message: string;
-    path: string;
-    keyword: string;
-  }>;
-}
 
 export class ConfigValidator {
   private ajv: Ajv;
@@ -202,15 +194,16 @@ export class ConfigValidator {
     // Then, validate that schema references exist and point to valid schemas
     for (const [promptId, prompt] of Object.entries(config.prompts)) {
       for (const [variantId, variant] of Object.entries(prompt.variants)) {
-        if (variant.responseFormat?.type === 'json_schema') {
-          const schemaRef = variant.responseFormat.schemaRef;
+        const typedVariant = variant as Variant;
+        if (typedVariant.responseFormat?.type === 'json_schema') {
+          const schemaRef = typedVariant.responseFormat.schemaRef;
           if (!schemaRef) {
             throw new ConfigurationError(
               `Variant "${variantId}" in prompt "${promptId}" has json_schema response format but missing schemaRef`,
               {
                 promptId,
                 variantId,
-                responseFormat: variant.responseFormat,
+                responseFormat: typedVariant.responseFormat,
               }
             );
           }

@@ -1,21 +1,6 @@
 import { randomUUID } from 'crypto';
-import { PromptunaObservability, TokenUsage } from '../types/observability';
-import { ObservabilityTimer } from './observabilityTimer';
-
-interface BuilderInit {
-  sdkVersion: string;
-  environment?: 'dev' | 'prod';
-  promptId: string;
-  userId?: string;
-  /** Variant may be unknown at construction time */
-  variantId?: string;
-  routingReason: PromptunaObservability['routingReason'];
-  /** Tags that influenced routing (if any) */
-  routingTags?: string[];
-  /** Experiment context for weighted selection */
-  experimentContext?: PromptunaObservability['experimentContext'];
-  emit?: (evt: PromptunaObservability) => void;
-}
+import { PromptunaObservability, TokenUsage, BuilderInit } from './types';
+import { ObservabilityTimer } from './timer';
 
 /**
  * Convenience class for building and emitting `PromptunaObservability` records

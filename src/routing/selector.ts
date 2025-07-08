@@ -1,22 +1,6 @@
 import { createHash } from 'crypto';
-import { Variant, Prompt, RoutingRule, PhasedRule } from '../types/config';
-import { RoutingReason } from '../types/observability';
-
-export interface VariantSelection {
-  variantId: string;
-  variant: Variant;
-  reason: RoutingReason;
-  weightPicked?: number;
-}
-
-export interface VariantSelectorParams {
-  prompt: Prompt;
-  promptId: string;
-  userId?: string;
-  tags?: string[];
-  /** Unix timestamp in seconds */
-  now?: number;
-}
+import { Variant, Prompt } from '../config/types';
+import type { VariantSelection, VariantSelectorParams, RoutingRule, PhasedRule } from './types';
 
 /** Deterministic pseudo-random in [0,1). */
 function deterministicRandom(

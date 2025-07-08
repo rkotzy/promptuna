@@ -3,7 +3,7 @@ export interface ChatMessage {
   content: string;
 }
 
-import type { ResponseFormat } from '../types/config';
+import type { ResponseFormat } from '../responses/types';
 
 export interface ChatCompletionOptions {
   messages: ChatMessage[];

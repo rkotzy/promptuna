@@ -56,7 +56,10 @@ export class OpenAIProvider implements Provider {
       if (responseFormat?.type === 'json_schema' && responseSchema) {
         openaiOptions.response_format = {
           type: 'json_schema',
-          json_schema: responseSchema,
+          json_schema: {
+            name: 'response_schema', // OpenAI requires a name field
+            schema: responseSchema, // Schema must be nested under 'schema' property
+          },
         };
       }
 

@@ -1,8 +1,5 @@
-import {
-  ProviderCapabilities,
-  ProviderId,
-  MappingRule,
-} from '../providers/providerCapabilities';
+import type { ProviderId, MappingRule } from '../types';
+import { ProviderCapabilities } from './providerCapabilities';
 
 /**
  * Convert the canonical variant.parameters object into the provider-specific

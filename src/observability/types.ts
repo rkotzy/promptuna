@@ -89,3 +89,31 @@ export type RoutingReason =
   | 'phased-rollout'
   | 'weight-distribution'
   | 'default';
+
+export interface Timings {
+  /** End-to-end duration – automatically filled */
+  total: number;
+  /** Time spent rendering Liquid templates */
+  template?: number;
+  /** Time spent waiting for provider response */
+  provider?: number;
+  /** Number of retries that occurred */
+  retries?: number;
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  [key: string]: number | undefined;
+}
+
+export interface BuilderInit {
+  sdkVersion: string;
+  environment?: 'dev' | 'prod';
+  promptId: string;
+  userId?: string;
+  /** Variant may be unknown at construction time */
+  variantId?: string;
+  routingReason: PromptunaObservability['routingReason'];
+  /** Tags that influenced routing (if any) */
+  routingTags?: string[];
+  /** Experiment context for weighted selection */
+  experimentContext?: PromptunaObservability['experimentContext'];
+  emit?: (evt: PromptunaObservability) => void;
+}

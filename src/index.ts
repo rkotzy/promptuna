@@ -1,15 +1,58 @@
 export { Promptuna } from './Promptuna';
-export { ConfigValidator } from './validators/configValidator';
 
-export type { ValidationResult } from './validators/configValidator';
+// Configuration
+export { ConfigValidator } from './config';
+export type { 
+  PromptunaConfig, 
+  PromptunaRuntimeConfig, 
+  ProviderConfig,
+  ValidationResult
+} from './config';
 
-export * from './types/config';
+// Core types
+export type { 
+  Variant, 
+  Prompt, 
+  ExecutionError 
+} from './config';
 
+export type { 
+  ChatCompletionParams, 
+  GetTemplateParams 
+} from './config';
+
+// Templates
+export type { 
+  Message, 
+  RenderedMessage 
+} from './templates';
+
+// Providers
 export type {
   ChatMessage,
   ChatCompletionOptions,
   ChatCompletionResponse,
-  Provider,
-} from './providers/types';
+  Provider
+} from './providers';
 
-export type { ChatCompletionParams, GetTemplateParams } from './types/invokeOptions';
+// Response types
+export type {
+  ResponseFormat,
+  ModelParams,
+  FallbackTarget
+} from './responses';
+
+// Routing
+export type {
+  VariantSelection,
+  RoutingRule,
+  PhasedRule,
+  Routing
+} from './routing';
+
+// Observability
+export type {
+  PromptunaObservability,
+  TokenUsage,
+  RoutingReason
+} from './observability';

@@ -1,5 +1,5 @@
 import { Liquid } from 'liquidjs';
-import { TemplateError } from '../types/config';
+import { TemplateError } from './types';
 
 export class TemplateProcessor {
   private liquid: Liquid;

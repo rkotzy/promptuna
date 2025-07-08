@@ -1,16 +1,6 @@
 import { Provider } from '../providers/types';
 import { ProviderError } from '../errors';
-
-export interface ExecutionTarget {
-  providerId: string; // Key into config.providers
-  providerType: string; // e.g. "openai", "anthropic", "google"
-  model: string;
-}
-
-export interface FallbackCallbackContext {
-  target: ExecutionTarget;
-  error?: ProviderError;
-}
+import type { ExecutionTarget, FallbackCallbackContext } from './types';
 
 /**
  * Execute a chat completion (or any provider operation) against a list of targets.

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { testConfigs, testUsers, testTimes, mockCurrentTime, testAssertions } from '../../fixtures/test-utils';
+import {
+  testConfigs,
+  testUsers,
+  testTimes,
+  mockCurrentTime,
+  testAssertions,
+} from '../../fixtures/test-utils';
 import type { VariantSelectorParams } from '../../../src/routing/types';
 
 // Mock crypto module before importing the selector
@@ -169,7 +175,7 @@ describe('Variant Selector', () => {
       const results: string[] = [];
       const userIds = ['user_1', 'user_2', 'user_3', 'user_4', 'user_5'];
 
-      userIds.forEach((userId) => {
+      userIds.forEach(userId => {
         const params: VariantSelectorParams = {
           prompt: testConfigs.complexRouting.prompts.complex_prompt,
           promptId: 'complex_prompt',
@@ -184,7 +190,9 @@ describe('Variant Selector', () => {
       // Should get variants from the weight distribution
       const uniqueVariants = [...new Set(results)];
       expect(uniqueVariants.length).toBeGreaterThan(0);
-      expect(uniqueVariants.every(v => ['v_default', 'v_experimental'].includes(v))).toBe(true);
+      expect(
+        uniqueVariants.every(v => ['v_default', 'v_experimental'].includes(v))
+      ).toBe(true);
     });
   });
 
@@ -227,7 +235,7 @@ describe('Variant Selector', () => {
       // The important thing is that each user gets consistent results
       expect(result1).toBeDefined();
       expect(result2).toBeDefined();
-      
+
       // Verify consistency for each user
       expect(selectVariant(params1).variantId).toBe(result1.variantId);
       expect(selectVariant(params2).variantId).toBe(result2.variantId);
@@ -246,7 +254,7 @@ describe('Variant Selector', () => {
       selectVariant(params);
 
       expect(mathRandomSpy).toHaveBeenCalled();
-      
+
       mathRandomSpy.mockRestore();
     });
   });
@@ -293,7 +301,9 @@ describe('Variant Selector', () => {
             default: true,
             provider: 'test_provider',
             model: 'test_model',
-            messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+            messages: [
+              { role: 'user' as const, content: { template: 'Test' } },
+            ],
             parameters: {},
           },
         },
@@ -324,7 +334,9 @@ describe('Variant Selector', () => {
           v_one: {
             provider: 'test_provider',
             model: 'test_model',
-            messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+            messages: [
+              { role: 'user' as const, content: { template: 'Test' } },
+            ],
             parameters: {},
           },
         },
@@ -340,7 +352,9 @@ describe('Variant Selector', () => {
         tags: [],
       };
 
-      expect(() => selectVariant(params)).toThrow('No default variant found for prompt');
+      expect(() => selectVariant(params)).toThrow(
+        'No default variant found for prompt'
+      );
     });
 
     it('should handle routing rule with missing target variant', () => {
@@ -351,7 +365,9 @@ describe('Variant Selector', () => {
             default: true,
             provider: 'test_provider',
             model: 'test_model',
-            messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+            messages: [
+              { role: 'user' as const, content: { template: 'Test' } },
+            ],
             parameters: {},
           },
         },
@@ -373,7 +389,9 @@ describe('Variant Selector', () => {
       };
 
       // Should throw an error when variant target doesn't exist
-      expect(() => selectVariant(params)).toThrow('Variant \'v_nonexistent\' not found in prompt');
+      expect(() => selectVariant(params)).toThrow(
+        "Variant 'v_nonexistent' not found in prompt"
+      );
     });
   });
 });

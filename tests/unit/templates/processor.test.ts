@@ -39,11 +39,11 @@ describe('TemplateProcessor', () => {
 
     it('should handle nested object variables', async () => {
       const template = 'Hello {{user.name}}, your email is {{user.email}}!';
-      const variables = { 
-        user: { 
-          name: 'Alice', 
-          email: 'alice@example.com' 
-        } 
+      const variables = {
+        user: {
+          name: 'Alice',
+          email: 'alice@example.com',
+        },
       };
 
       const result = await processor.processTemplate(template, variables);
@@ -61,9 +61,12 @@ describe('TemplateProcessor', () => {
     });
 
     it('should handle conditional logic', async () => {
-      const template = '{% if user %}Hello {{user}}!{% else %}Hello guest!{% endif %}';
-      
-      const resultWithUser = await processor.processTemplate(template, { user: 'Alice' });
+      const template =
+        '{% if user %}Hello {{user}}!{% else %}Hello guest!{% endif %}';
+
+      const resultWithUser = await processor.processTemplate(template, {
+        user: 'Alice',
+      });
       expect(resultWithUser).toBe('Hello Alice!');
 
       const resultWithoutUser = await processor.processTemplate(template, {});
@@ -83,8 +86,9 @@ describe('TemplateProcessor', () => {
       const template = 'Hello {{name}'; // Missing closing brace
       const variables = { name: 'Alice' };
 
-      await expect(processor.processTemplate(template, variables))
-        .rejects.toThrow(TemplateError);
+      await expect(
+        processor.processTemplate(template, variables)
+      ).rejects.toThrow(TemplateError);
     });
 
     it('should include helpful error context in TemplateError', async () => {
@@ -396,8 +400,8 @@ Welcome, guest!
       const variables = {
         user: {
           name: 'alice',
-          items: ['apple', 'banana', 'cherry']
-        }
+          items: ['apple', 'banana', 'cherry'],
+        },
       };
 
       const result = await processor.processTemplate(template, variables);
@@ -420,8 +424,8 @@ Welcome, guest!
       const variables = {
         categories: [
           { name: 'fruits', items: ['apple', 'banana'] },
-          { name: 'vegetables', items: ['carrot', 'broccoli'] }
-        ]
+          { name: 'vegetables', items: ['carrot', 'broccoli'] },
+        ],
       };
 
       const result = await processor.processTemplate(template, variables);
@@ -452,7 +456,7 @@ Best regards,
       const variables = {
         name: 'alice',
         tasks: ['Review code', 'Write tests', 'Deploy app'],
-        sender: 'Bot Assistant'
+        sender: 'Bot Assistant',
       };
 
       const result = await processor.processTemplate(template, variables);

@@ -10,5 +10,5 @@ export type {
   Prompt,
   ExecutionError,
   ChatCompletionParams,
-  GetTemplateParams
+  GetTemplateParams,
 } from './types';

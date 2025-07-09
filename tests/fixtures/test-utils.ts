@@ -33,16 +33,16 @@ export const testConfigs = {
     providers: {
       openai_gpt4: {
         type: 'openai',
-        baseUrl: 'https://api.openai.com/v1'
+        baseUrl: 'https://api.openai.com/v1',
       },
       anthropic_claude: {
         type: 'anthropic',
-        baseUrl: 'https://api.anthropic.com'
+        baseUrl: 'https://api.anthropic.com',
       },
       google_gemini: {
         type: 'google',
-        baseUrl: 'https://generativelanguage.googleapis.com'
-      }
+        baseUrl: 'https://generativelanguage.googleapis.com',
+      },
     },
     responseSchemas: {
       user_profile: {
@@ -50,11 +50,11 @@ export const testConfigs = {
         properties: {
           name: { type: 'string' },
           age: { type: 'integer' },
-          email: { type: 'string', format: 'email' }
+          email: { type: 'string', format: 'email' },
         },
         required: ['name', 'age', 'email'],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     prompts: {
       greeting: {
@@ -65,23 +65,29 @@ export const testConfigs = {
             provider: 'openai_gpt4',
             model: 'gpt-4',
             messages: [
-              { role: 'system', content: { template: 'You are a helpful assistant.' } },
-              { role: 'user', content: { template: 'Hello {{name}}! How are you today?' } }
+              {
+                role: 'system',
+                content: { template: 'You are a helpful assistant.' },
+              },
+              {
+                role: 'user',
+                content: { template: 'Hello {{name}}! How are you today?' },
+              },
             ],
-            parameters: { temperature: 0.7, max_tokens: 100 }
-          }
+            parameters: { temperature: 0.7, max_tokens: 100 },
+          },
         },
         routing: {
-          rules: [{ weight: 100, target: 'v_default' }]
-        }
-      }
-    }
+          rules: [{ weight: 100, target: 'v_default' }],
+        },
+      },
+    },
   } as PromptunaConfig,
 
   invalid: {
     version: '1.0.0',
     providers: {
-      openai_gpt4: { type: 'openai' }
+      openai_gpt4: { type: 'openai' },
     },
     prompts: {
       invalid_prompt: {
@@ -91,25 +97,25 @@ export const testConfigs = {
             provider: 'openai_gpt4',
             model: 'gpt-4',
             messages: [{ role: 'user', content: { template: 'Test' } }],
-            parameters: { temperature: 0.7, max_tokens: 100 }
+            parameters: { temperature: 0.7, max_tokens: 100 },
           },
           v_two: {
             provider: 'openai_gpt4',
             model: 'gpt-4',
             messages: [{ role: 'user', content: { template: 'Test' } }],
-            parameters: { temperature: 0.7, max_tokens: 100 }
-          }
+            parameters: { temperature: 0.7, max_tokens: 100 },
+          },
         },
         routing: {
           rules: [
             { weight: 50, target: 'v_nonexistent' },
-            { weight: 50, target: 'v_one' }
-          ]
-        }
-      }
-    }
+            { weight: 50, target: 'v_one' },
+          ],
+        },
+      },
+    },
   } as PromptunaConfig,
-  
+
   // Minimal valid config for quick tests
   minimal: {
     version: '1.0.0',
@@ -149,7 +155,7 @@ export const testConfigs = {
       },
     },
   } as PromptunaConfig,
-  
+
   // Config with complex routing
   complexRouting: {
     version: '1.0.0',
@@ -206,7 +212,7 @@ export const testConfigs = {
           phased: [
             {
               start: 1704067200, // 2024-01-01
-              end: 1706745600,   // 2024-02-01
+              end: 1706745600, // 2024-02-01
               weights: {
                 v_default: 50,
                 v_premium: 30,
@@ -267,7 +273,7 @@ export const mockProviderFactory = {
       },
     }),
   }),
-  
+
   anthropic: () => ({
     chatCompletion: vi.fn().mockResolvedValue({
       id: 'test_anthropic_123',
@@ -289,7 +295,7 @@ export const mockProviderFactory = {
       },
     }),
   }),
-  
+
   google: () => ({
     chatCompletion: vi.fn().mockResolvedValue({
       id: 'test_google_123',
@@ -319,10 +325,10 @@ export const mockProviderFactory = {
 export const testTimes = {
   // 2024-01-01 (within phase)
   withinPhase: 1704067200,
-  
+
   // 2024-02-15 (after phase)
   afterPhase: 1708000000,
-  
+
   // 2023-12-01 (before phase)
   beforePhase: 1701388800,
 };
@@ -345,11 +351,11 @@ export const testAssertions = {
       reason: expect.any(String),
     });
   },
-  
+
   expectRoutingReason: (result: any, expectedReason: string) => {
     expect(result.reason).toBe(expectedReason);
   },
-  
+
   expectProviderCalled: (mockProvider: any, expectedParams: any) => {
     expect(mockProvider.chatCompletion).toHaveBeenCalledWith(
       expect.objectContaining(expectedParams)

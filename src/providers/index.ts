@@ -6,5 +6,5 @@ export type {
   ChatMessage,
   ChatCompletionOptions,
   ChatCompletionResponse,
-  Provider
+  Provider,
 } from './types';

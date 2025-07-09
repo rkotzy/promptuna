@@ -78,13 +78,17 @@ describe('ConfigLoader', () => {
               v_one: {
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 },
               },
               v_two: {
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 },
               },
             },
@@ -113,14 +117,18 @@ describe('ConfigLoader', () => {
                 default: true,
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 },
               },
               v_two: {
                 default: true,
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 },
               },
             },
@@ -152,7 +160,9 @@ describe('ConfigLoader', () => {
                 default: true,
                 provider: 'claude',
                 model: 'claude-3-sonnet-20240229',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 }, // Missing max_tokens
               },
             },
@@ -184,7 +194,9 @@ describe('ConfigLoader', () => {
                 default: true,
                 provider: 'openai',
                 model: 'gpt-4',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 }, // max_tokens not required for OpenAI
               },
             },
@@ -198,7 +210,9 @@ describe('ConfigLoader', () => {
 
       const result = await loader.loadConfigFile(configPath);
       expect(result).toBeDefined();
-      expect(result.prompts.test_prompt.variants.v_default.parameters?.max_tokens).toBeUndefined();
+      expect(
+        result.prompts.test_prompt.variants.v_default.parameters?.max_tokens
+      ).toBeUndefined();
     });
 
     it('should provide helpful error context', async () => {
@@ -241,7 +255,9 @@ describe('ConfigLoader', () => {
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(ConfigurationError);
-        expect((error as ConfigurationError).message).toContain('Failed to load config file');
+        expect((error as ConfigurationError).message).toContain(
+          'Failed to load config file'
+        );
       }
     });
   });

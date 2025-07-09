@@ -1,8 +1,8 @@
 export { selectVariant } from './selector';
-export type { 
-  VariantSelection, 
+export type {
+  VariantSelection,
   VariantSelectorParams,
   RoutingRule,
   PhasedRule,
-  Routing
+  Routing,
 } from './types';

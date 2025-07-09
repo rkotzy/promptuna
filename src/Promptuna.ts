@@ -68,10 +68,12 @@ export class Promptuna {
     }
 
     if (!this.configPromise) {
-      this.configPromise = this.loader.loadConfigFile(this.configPath).then(config => {
-        this.config = config;
-        return config;
-      });
+      this.configPromise = this.loader
+        .loadConfigFile(this.configPath)
+        .then(config => {
+          this.config = config;
+          return config;
+        });
     }
 
     return this.configPromise;
@@ -84,9 +86,7 @@ export class Promptuna {
    * @throws ExecutionError if prompt/variant not found or invalid message format
    * @throws TemplateError if template processing fails
    */
-  async getTemplate(
-    params: GetTemplateParams
-  ): Promise<RenderedMessage[]> {
+  async getTemplate(params: GetTemplateParams): Promise<RenderedMessage[]> {
     const { promptId, variantId, variables = {} } = params;
     const config = await this.getConfig();
 
@@ -193,7 +193,14 @@ export class Promptuna {
   async chatCompletion(
     params: ChatCompletionParams
   ): Promise<ChatCompletionResponse> {
-    const { promptId, variables = {}, messageHistory = [], userId, tags = [], unixTime = Math.floor(Date.now() / 1000) } = params;
+    const {
+      promptId,
+      variables = {},
+      messageHistory = [],
+      userId,
+      tags = [],
+      unixTime = Math.floor(Date.now() / 1000),
+    } = params;
 
     // Observability builder created at function start to capture full E2E timing
     const obsBuilder = new ObservabilityBuilder({
@@ -243,7 +250,11 @@ export class Promptuna {
       }
 
       // Render template
-      const messages = await this.getTemplate({ promptId, variantId: selectedId, variables });
+      const messages = await this.getTemplate({
+        promptId,
+        variantId: selectedId,
+        variables,
+      });
       obsBuilder.markTemplate();
 
       // ---------------------- fallback execution ----------------------
@@ -291,12 +302,16 @@ export class Promptuna {
       }));
 
       // Combine message history with template messages
-      const chatMessages: ChatMessage[] = [...messageHistory, ...templateMessages];
+      const chatMessages: ChatMessage[] = [
+        ...messageHistory,
+        ...templateMessages,
+      ];
 
       // Get response schema if needed (validation guarantees it exists)
-      const responseSchema = variant.responseFormat?.type === 'json_schema' 
-        ? config.responseSchemas?.[variant.responseFormat.schemaRef!]
-        : undefined;
+      const responseSchema =
+        variant.responseFormat?.type === 'json_schema'
+          ? config.responseSchemas?.[variant.responseFormat.schemaRef!]
+          : undefined;
 
       const response = await executeWithFallback<ChatCompletionResponse>(
         targets,

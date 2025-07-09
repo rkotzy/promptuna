@@ -1,6 +1,10 @@
 import type { PromptunaObservability } from '../observability/types';
 import type { Message } from '../templates/types';
-import type { ResponseFormat, FallbackTarget, ModelParams } from '../responses/types';
+import type {
+  ResponseFormat,
+  FallbackTarget,
+  ModelParams,
+} from '../responses/types';
 import type { Routing } from '../routing/types';
 import type { ChatMessage } from '../providers/types';
 

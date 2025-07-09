@@ -1,6 +1,11 @@
 import { createHash } from 'crypto';
 import { Variant, Prompt } from '../config/types';
-import type { VariantSelection, VariantSelectorParams, RoutingRule, PhasedRule } from './types';
+import type {
+  VariantSelection,
+  VariantSelectorParams,
+  RoutingRule,
+  PhasedRule,
+} from './types';
 
 /** Deterministic pseudo-random in [0,1). */
 function deterministicRandom(
@@ -44,10 +49,14 @@ function validateAndGetVariant(
   return variant;
 }
 
-export function selectVariant(
-  params: VariantSelectorParams
-): VariantSelection {
-  const { prompt, promptId, userId, tags = [], now = Math.floor(Date.now() / 1000) } = params;
+export function selectVariant(params: VariantSelectorParams): VariantSelection {
+  const {
+    prompt,
+    promptId,
+    userId,
+    tags = [],
+    now = Math.floor(Date.now() / 1000),
+  } = params;
   const routing = prompt.routing ?? {};
   const rules: RoutingRule[] = routing.rules ?? [];
 

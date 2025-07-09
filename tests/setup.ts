@@ -13,8 +13,8 @@ global.console = {
 vi.mock('crypto', () => ({
   createHash: vi.fn(() => ({
     update: vi.fn().mockReturnThis(),
-    digest: vi.fn(() => 'deadbeef12345678') // Fixed hash for deterministic tests
-  }))
+    digest: vi.fn(() => 'deadbeef12345678'), // Fixed hash for deterministic tests
+  })),
 }));
 
 // Mock file system operations
@@ -38,7 +38,7 @@ vi.mock('path', async () => {
 beforeEach(() => {
   // Reset all mocks before each test
   vi.clearAllMocks();
-  
+
   // Reset console mocks
   vi.mocked(console.log).mockClear();
   vi.mocked(console.info).mockClear();

@@ -24,11 +24,11 @@ describe('Promptuna Integration Tests', () => {
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks();
-    
+
     // Mock fs.readFile to return our test config
     mockReadFile = vi.mocked(readFile);
     mockReadFile.mockResolvedValue(JSON.stringify(testConfigs.valid));
-    
+
     // Create Promptuna instance
     promptuna = new Promptuna({
       configPath: './test-config.json',
@@ -66,11 +66,13 @@ describe('Promptuna Integration Tests', () => {
     it('should handle configuration loading errors', async () => {
       mockReadFile.mockRejectedValueOnce(new Error('Config file not found'));
 
-      await expect(promptuna.getTemplate({
-        promptId: 'greeting',
-        variantId: 'v_default',
-        variables: {},
-      })).rejects.toThrow('Failed to load config file');
+      await expect(
+        promptuna.getTemplate({
+          promptId: 'greeting',
+          variantId: 'v_default',
+          variables: {},
+        })
+      ).rejects.toThrow('Failed to load config file');
     });
   });
 
@@ -94,7 +96,7 @@ describe('Promptuna Integration Tests', () => {
         role: 'user',
         content: expect.any(String),
       });
-      
+
       // Verify template was processed with variables
       expect(messages[1].content).toContain('Alice');
     });
@@ -115,19 +117,23 @@ describe('Promptuna Integration Tests', () => {
     });
 
     it('should throw error for non-existent prompt', async () => {
-      await expect(promptuna.getTemplate({
-        promptId: 'non_existent_prompt',
-        variantId: 'v_default',
-        variables: {},
-      })).rejects.toThrow('Prompt not found');
+      await expect(
+        promptuna.getTemplate({
+          promptId: 'non_existent_prompt',
+          variantId: 'v_default',
+          variables: {},
+        })
+      ).rejects.toThrow('Prompt not found');
     });
 
     it('should throw error for non-existent variant', async () => {
-      await expect(promptuna.getTemplate({
-        promptId: 'greeting',
-        variantId: 'non_existent_variant',
-        variables: {},
-      })).rejects.toThrow('Variant not found');
+      await expect(
+        promptuna.getTemplate({
+          promptId: 'greeting',
+          variantId: 'non_existent_variant',
+          variables: {},
+        })
+      ).rejects.toThrow('Variant not found');
     });
   });
 
@@ -135,11 +141,13 @@ describe('Promptuna Integration Tests', () => {
     it('should handle JSON parsing errors', async () => {
       mockReadFile.mockResolvedValueOnce('invalid json');
 
-      await expect(promptuna.getTemplate({
-        promptId: 'greeting',
-        variantId: 'v_default',
-        variables: {},
-      })).rejects.toThrow();
+      await expect(
+        promptuna.getTemplate({
+          promptId: 'greeting',
+          variantId: 'v_default',
+          variables: {},
+        })
+      ).rejects.toThrow();
     });
 
     it('should handle missing required fields', async () => {
@@ -148,14 +156,16 @@ describe('Promptuna Integration Tests', () => {
         providers: {},
         // Missing prompts
       };
-      
+
       mockReadFile.mockResolvedValueOnce(JSON.stringify(invalidConfig));
 
-      await expect(promptuna.getTemplate({
-        promptId: 'greeting',
-        variantId: 'v_default',
-        variables: {},
-      })).rejects.toThrow();
+      await expect(
+        promptuna.getTemplate({
+          promptId: 'greeting',
+          variantId: 'v_default',
+          variables: {},
+        })
+      ).rejects.toThrow();
     });
   });
 
@@ -185,7 +195,9 @@ describe('Promptuna Integration Tests', () => {
       results.forEach((messages, index) => {
         expect(messages).toBeInstanceOf(Array);
         expect(messages).toHaveLength(2);
-        expect(messages[1].content).toContain(['Alice', 'Bob', 'Charlie'][index]);
+        expect(messages[1].content).toContain(
+          ['Alice', 'Bob', 'Charlie'][index]
+        );
       });
 
       // Config should still be loaded only once

@@ -7,7 +7,7 @@ import { resolve } from 'path';
  */
 async function main() {
   const args = process.argv.slice(2);
-  
+
   if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
     console.log(`
 Promptuna Configuration Validator
@@ -30,30 +30,32 @@ Examples:
 
   try {
     console.log(`Validating configuration: ${configPath}`);
-    
+
     const startTime = Date.now();
     const config = await validator.validateAndLoadConfigFile(configPath);
     const duration = Date.now() - startTime;
-    
+
     console.log('✅ Configuration valid');
     console.log(`   Version: ${config.version}`);
     console.log(`   Prompts: ${Object.keys(config.prompts).length}`);
     console.log(`   Providers: ${Object.keys(config.providers).length}`);
     if (config.responseSchemas) {
-      console.log(`   Response schemas: ${Object.keys(config.responseSchemas).length}`);
+      console.log(
+        `   Response schemas: ${Object.keys(config.responseSchemas).length}`
+      );
     }
     console.log(`   Validation time: ${duration}ms`);
-    
+
     process.exit(0);
   } catch (error: any) {
     console.error('❌ Validation failed');
     console.error(`   ${error.message}`);
-    
+
     if (error.details) {
       console.error('\nDetails:');
       console.error(JSON.stringify(error.details, null, 2));
     }
-    
+
     process.exit(1);
   }
 }

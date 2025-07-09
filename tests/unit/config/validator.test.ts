@@ -28,20 +28,22 @@ describe('ConfigValidator', () => {
     validator = new ConfigValidator();
     mockReadFile = vi.mocked(readFile);
     vi.clearAllMocks();
-    
+
     // Default mock for schema.json
     mockReadFile.mockImplementation((path: string) => {
       if (path.includes('schema.json')) {
-        return Promise.resolve(JSON.stringify({
-          $schema: 'https://json-schema.org/draft/2020-12/schema',
-          type: 'object',
-          properties: {
-            version: { type: 'string' },
-            providers: { type: 'object' },
-            prompts: { type: 'object' },
-          },
-          required: ['version', 'providers', 'prompts'],
-        }));
+        return Promise.resolve(
+          JSON.stringify({
+            $schema: 'https://json-schema.org/draft/2020-12/schema',
+            type: 'object',
+            properties: {
+              version: { type: 'string' },
+              providers: { type: 'object' },
+              prompts: { type: 'object' },
+            },
+            required: ['version', 'providers', 'prompts'],
+          })
+        );
       }
       return Promise.resolve('{}');
     });
@@ -75,7 +77,9 @@ describe('ConfigValidator', () => {
 
       const result = await validator.validate(incompleteConfig);
       expect(result.valid).toBe(false);
-      expect(result.errors?.some(e => e.message.includes('required'))).toBe(true);
+      expect(result.errors?.some(e => e.message.includes('required'))).toBe(
+        true
+      );
     });
   });
 
@@ -109,9 +113,9 @@ describe('ConfigValidator', () => {
       const configPath = '/nonexistent/config.json';
       mockReadFile.mockRejectedValue(new Error('File not found'));
 
-      await expect(validator.validateAndLoadConfigFile(configPath)).rejects.toThrow(
-        ConfigurationError
-      );
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow(ConfigurationError);
     });
 
     it('should handle JSON parsing errors', async () => {
@@ -123,9 +127,9 @@ describe('ConfigValidator', () => {
         return Promise.resolve('{ invalid json }');
       });
 
-      await expect(validator.validateAndLoadConfigFile(configPath)).rejects.toThrow(
-        ConfigurationError
-      );
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow(ConfigurationError);
     });
 
     it('should validate schema references', async () => {
@@ -140,7 +144,9 @@ describe('ConfigValidator', () => {
                 default: true,
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 },
                 responseFormat: {
                   type: 'json_schema' as const,
@@ -162,9 +168,9 @@ describe('ConfigValidator', () => {
         return Promise.resolve(JSON.stringify(configWithInvalidSchemaRef));
       });
 
-      await expect(validator.validateAndLoadConfigFile(configPath)).rejects.toThrow(
-        'Schema reference "nonexistent_schema" not found'
-      );
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow('Schema reference "nonexistent_schema" not found');
     });
 
     it('should validate structured output requirements', async () => {
@@ -190,7 +196,9 @@ describe('ConfigValidator', () => {
                 default: true,
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 },
                 responseFormat: {
                   type: 'json_schema' as const,
@@ -212,7 +220,9 @@ describe('ConfigValidator', () => {
         return Promise.resolve(JSON.stringify(invalidStructuredOutputConfig));
       });
 
-      await expect(validator.validateAndLoadConfigFile(configPath)).rejects.toThrow(
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow(
         'requires additionalProperties: false for structured outputs'
       );
     });
@@ -240,7 +250,9 @@ describe('ConfigValidator', () => {
                 default: true,
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 },
                 responseFormat: {
                   type: 'json_schema' as const,
@@ -262,7 +274,9 @@ describe('ConfigValidator', () => {
         return Promise.resolve(JSON.stringify(optionalFieldsConfig));
       });
 
-      await expect(validator.validateAndLoadConfigFile(configPath)).rejects.toThrow(
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow(
         'has optional fields. All fields must be required for structured outputs'
       );
     });
@@ -279,7 +293,9 @@ describe('ConfigValidator', () => {
                 default: true,
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 },
               },
             },
@@ -299,9 +315,9 @@ describe('ConfigValidator', () => {
         return Promise.resolve(JSON.stringify(invalidRoutingConfig));
       });
 
-      await expect(validator.validateAndLoadConfigFile(configPath)).rejects.toThrow(
-        'targets non-existent variant'
-      );
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow('targets non-existent variant');
     });
 
     it('should validate fallback targets', async () => {
@@ -316,7 +332,9 @@ describe('ConfigValidator', () => {
                 default: true,
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 },
                 fallback: [
                   {
@@ -341,9 +359,9 @@ describe('ConfigValidator', () => {
         return Promise.resolve(JSON.stringify(invalidFallbackConfig));
       });
 
-      await expect(validator.validateAndLoadConfigFile(configPath)).rejects.toThrow(
-        'references non-existent provider'
-      );
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow('references non-existent provider');
     });
 
     it('should validate version compatibility', async () => {
@@ -360,9 +378,9 @@ describe('ConfigValidator', () => {
         return Promise.resolve(JSON.stringify(unsupportedVersionConfig));
       });
 
-      await expect(validator.validateAndLoadConfigFile(configPath)).rejects.toThrow(
-        'Unsupported major version'
-      );
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow('Unsupported major version');
     });
 
     it('should validate phased rollout configuration', async () => {
@@ -377,7 +395,9 @@ describe('ConfigValidator', () => {
                 default: true,
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
-                messages: [{ role: 'user' as const, content: { template: 'Test' } }],
+                messages: [
+                  { role: 'user' as const, content: { template: 'Test' } },
+                ],
                 parameters: { temperature: 0.7 },
               },
             },
@@ -404,9 +424,9 @@ describe('ConfigValidator', () => {
         return Promise.resolve(JSON.stringify(invalidPhasedConfig));
       });
 
-      await expect(validator.validateAndLoadConfigFile(configPath)).rejects.toThrow(
-        'has weight for non-existent variant'
-      );
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow('has weight for non-existent variant');
     });
   });
 
@@ -444,7 +464,9 @@ describe('ConfigValidator', () => {
         expect.fail('Should have thrown an error');
       } catch (error) {
         expect(error).toBeInstanceOf(ConfigurationError);
-        expect((error as ConfigurationError).message).toContain('Failed to load schema');
+        expect((error as ConfigurationError).message).toContain(
+          'Failed to load schema'
+        );
       }
     });
   });

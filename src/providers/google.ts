@@ -44,9 +44,18 @@ export class GoogleProvider implements Provider {
 
     try {
       // Transform messages to get contents and system instruction
-      const { contents, systemInstruction } = this.transformMessages(options.messages);
+      const { contents, systemInstruction } = this.transformMessages(
+        options.messages
+      );
 
-      const { model, messages: _msgs, userId, responseFormat, responseSchema, ...rest } = options;
+      const {
+        model,
+        messages: _msgs,
+        userId,
+        responseFormat,
+        responseSchema,
+        ...rest
+      } = options;
 
       // Build config object
       const config: any = { ...rest };
@@ -110,7 +119,10 @@ export class GoogleProvider implements Provider {
     }
   }
 
-  private transformMessages(messages: any[]): { contents: string; systemInstruction?: string } {
+  private transformMessages(messages: any[]): {
+    contents: string;
+    systemInstruction?: string;
+  } {
     if (messages.length === 0) {
       throw new Error('At least one message is required');
     }
@@ -119,16 +131,19 @@ export class GoogleProvider implements Provider {
     const conversationMessages = messages.filter(msg => msg.role !== 'system');
 
     // Create system instruction from system messages
-    const systemInstruction = systemMessages.length > 0 
-      ? systemMessages.map(s => s.content).join('\n\n')
-      : undefined;
+    const systemInstruction =
+      systemMessages.length > 0
+        ? systemMessages.map(s => s.content).join('\n\n')
+        : undefined;
 
     // Convert conversation messages to a single string prompt
     // For the @google/genai API, contents should be a string
-    const contents = conversationMessages.map((msg) => {
-      const rolePrefix = msg.role === 'assistant' ? 'Assistant: ' : 'User: ';
-      return `${rolePrefix}${msg.content}`;
-    }).join('\n\n');
+    const contents = conversationMessages
+      .map(msg => {
+        const rolePrefix = msg.role === 'assistant' ? 'Assistant: ' : 'User: ';
+        return `${rolePrefix}${msg.content}`;
+      })
+      .join('\n\n');
 
     return { contents, systemInstruction };
   }

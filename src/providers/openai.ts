@@ -43,7 +43,14 @@ export class OpenAIProvider implements Provider {
     }
 
     try {
-      const { model, messages, userId, responseFormat, responseSchema, ...rest } = options;
+      const {
+        model,
+        messages,
+        userId,
+        responseFormat,
+        responseSchema,
+        ...rest
+      } = options;
 
       const openaiOptions: any = {
         model,

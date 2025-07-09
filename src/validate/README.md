@@ -89,6 +89,7 @@ npx promptuna-validate config.json
 - **Default variants** - Each prompt must have exactly one default variant
 - **Provider references** - All provider references must exist
 - **Required parameters** - Provider-specific required parameters must be present
+- **Template validation** - All Liquid templates are validated for syntax errors and unknown filters
 
 ## Bundle Size
 

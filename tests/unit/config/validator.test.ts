@@ -428,6 +428,169 @@ describe('ConfigValidator', () => {
         validator.validateAndLoadConfigFile(configPath)
       ).rejects.toThrow('has weight for non-existent variant');
     });
+
+    it('should validate template syntax in messages', async () => {
+      const configPath = '/test/config.json';
+      const invalidTemplateConfig = {
+        ...testConfigs.valid,
+        prompts: {
+          test_prompt: {
+            description: 'Test prompt',
+            variants: {
+              v_default: {
+                default: true,
+                provider: 'openai_gpt4',
+                model: 'gpt-4',
+                messages: [
+                  { 
+                    role: 'user' as const, 
+                    content: { template: 'Hello {{name}' } // Missing closing brace
+                  },
+                ],
+                parameters: { temperature: 0.7 },
+              },
+            },
+            routing: {
+              rules: [{ weight: 100, target: 'v_default' }],
+            },
+          },
+        },
+      };
+
+      mockReadFile.mockImplementation((path: string) => {
+        if (path.includes('schema.json')) {
+          return Promise.resolve(JSON.stringify({ type: 'object' }));
+        }
+        return Promise.resolve(JSON.stringify(invalidTemplateConfig));
+      });
+
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow('Template syntax error');
+    });
+
+    it('should validate template filter usage', async () => {
+      const configPath = '/test/config.json';
+      const invalidFilterConfig = {
+        ...testConfigs.valid,
+        prompts: {
+          test_prompt: {
+            description: 'Test prompt',
+            variants: {
+              v_default: {
+                default: true,
+                provider: 'openai_gpt4',
+                model: 'gpt-4',
+                messages: [
+                  { 
+                    role: 'user' as const, 
+                    content: { template: 'Hello {{name | nonexistent_filter}}' } // Invalid filter
+                  },
+                ],
+                parameters: { temperature: 0.7 },
+              },
+            },
+            routing: {
+              rules: [{ weight: 100, target: 'v_default' }],
+            },
+          },
+        },
+      };
+
+      mockReadFile.mockImplementation((path: string) => {
+        if (path.includes('schema.json')) {
+          return Promise.resolve(JSON.stringify({ type: 'object' }));
+        }
+        return Promise.resolve(JSON.stringify(invalidFilterConfig));
+      });
+
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow('Template syntax error');
+    });
+
+    it('should validate complex template syntax', async () => {
+      const configPath = '/test/config.json';
+      const complexInvalidTemplateConfig = {
+        ...testConfigs.valid,
+        prompts: {
+          test_prompt: {
+            description: 'Test prompt',
+            variants: {
+              v_default: {
+                default: true,
+                provider: 'openai_gpt4',
+                model: 'gpt-4',
+                messages: [
+                  { 
+                    role: 'user' as const, 
+                    content: { template: '{% if condition %}Hello{% endif' } // Missing closing %}
+                  },
+                ],
+                parameters: { temperature: 0.7 },
+              },
+            },
+            routing: {
+              rules: [{ weight: 100, target: 'v_default' }],
+            },
+          },
+        },
+      };
+
+      mockReadFile.mockImplementation((path: string) => {
+        if (path.includes('schema.json')) {
+          return Promise.resolve(JSON.stringify({ type: 'object' }));
+        }
+        return Promise.resolve(JSON.stringify(complexInvalidTemplateConfig));
+      });
+
+      await expect(
+        validator.validateAndLoadConfigFile(configPath)
+      ).rejects.toThrow('Template syntax error');
+    });
+
+    it('should pass validation for valid templates', async () => {
+      const configPath = '/test/config.json';
+      const validTemplateConfig = {
+        ...testConfigs.valid,
+        prompts: {
+          test_prompt: {
+            description: 'Test prompt',
+            variants: {
+              v_default: {
+                default: true,
+                provider: 'openai_gpt4',
+                model: 'gpt-4',
+                messages: [
+                  { 
+                    role: 'user' as const, 
+                    content: { template: 'Hello {{name | default: "World"}}!' }
+                  },
+                  { 
+                    role: 'assistant' as const, 
+                    content: { template: '{% if greeting %}{{greeting}}{% else %}Hi there!{% endif %}' }
+                  },
+                ],
+                parameters: { temperature: 0.7 },
+              },
+            },
+            routing: {
+              rules: [{ weight: 100, target: 'v_default' }],
+            },
+          },
+        },
+      };
+
+      mockReadFile.mockImplementation((path: string) => {
+        if (path.includes('schema.json')) {
+          return Promise.resolve(JSON.stringify({ type: 'object' }));
+        }
+        return Promise.resolve(JSON.stringify(validTemplateConfig));
+      });
+
+      const result = await validator.validateAndLoadConfigFile(configPath);
+      expect(result).toEqual(validTemplateConfig);
+    });
   });
 
   describe('error handling', () => {

@@ -230,6 +230,145 @@ describe('ConfigLoader', () => {
         });
       }
     });
+
+    it('should validate template syntax in messages', async () => {
+      const configPath = '/test/config.json';
+      const invalidTemplateConfig = {
+        ...testConfigs.valid,
+        prompts: {
+          test_prompt: {
+            description: 'Test prompt',
+            variants: {
+              v_default: {
+                default: true,
+                provider: 'openai_gpt4',
+                model: 'gpt-4',
+                messages: [
+                  { 
+                    role: 'user' as const, 
+                    content: { template: 'Hello {{name}' } // Missing closing brace
+                  },
+                ],
+                parameters: { temperature: 0.7 },
+              },
+            },
+            routing: {
+              rules: [{ weight: 100, target: 'v_default' }],
+            },
+          },
+        },
+      };
+      mockReadFile.mockResolvedValue(JSON.stringify(invalidTemplateConfig));
+
+      await expect(loader.loadConfigFile(configPath)).rejects.toThrow(
+        'Template syntax error'
+      );
+    });
+
+    it('should validate template filter usage', async () => {
+      const configPath = '/test/config.json';
+      const invalidFilterConfig = {
+        ...testConfigs.valid,
+        prompts: {
+          test_prompt: {
+            description: 'Test prompt',
+            variants: {
+              v_default: {
+                default: true,
+                provider: 'openai_gpt4',
+                model: 'gpt-4',
+                messages: [
+                  { 
+                    role: 'user' as const, 
+                    content: { template: 'Hello {{name | unknown_filter}}' } // Invalid filter
+                  },
+                ],
+                parameters: { temperature: 0.7 },
+              },
+            },
+            routing: {
+              rules: [{ weight: 100, target: 'v_default' }],
+            },
+          },
+        },
+      };
+      mockReadFile.mockResolvedValue(JSON.stringify(invalidFilterConfig));
+
+      await expect(loader.loadConfigFile(configPath)).rejects.toThrow(
+        'Template syntax error'
+      );
+    });
+
+    it('should validate complex template structures', async () => {
+      const configPath = '/test/config.json';
+      const complexInvalidConfig = {
+        ...testConfigs.valid,
+        prompts: {
+          test_prompt: {
+            description: 'Test prompt',
+            variants: {
+              v_default: {
+                default: true,
+                provider: 'openai_gpt4',
+                model: 'gpt-4',
+                messages: [
+                  { 
+                    role: 'user' as const, 
+                    content: { template: '{% for item in items %}{{item}}{% endfor' } // Missing closing %}
+                  },
+                ],
+                parameters: { temperature: 0.7 },
+              },
+            },
+            routing: {
+              rules: [{ weight: 100, target: 'v_default' }],
+            },
+          },
+        },
+      };
+      mockReadFile.mockResolvedValue(JSON.stringify(complexInvalidConfig));
+
+      await expect(loader.loadConfigFile(configPath)).rejects.toThrow(
+        'Template syntax error'
+      );
+    });
+
+    it('should pass validation for valid templates', async () => {
+      const configPath = '/test/config.json';
+      const validTemplateConfig = {
+        ...testConfigs.valid,
+        prompts: {
+          test_prompt: {
+            description: 'Test prompt',
+            variants: {
+              v_default: {
+                default: true,
+                provider: 'openai_gpt4',
+                model: 'gpt-4',
+                messages: [
+                  { 
+                    role: 'user' as const, 
+                    content: { template: 'Hello {{name | default: "World"}}!' }
+                  },
+                  { 
+                    role: 'assistant' as const, 
+                    content: { template: '{% if greeting %}{{greeting}}{% else %}Hi there!{% endif %}' }
+                  },
+                ],
+                parameters: { temperature: 0.7 },
+              },
+            },
+            routing: {
+              rules: [{ weight: 100, target: 'v_default' }],
+            },
+          },
+        },
+      };
+      mockReadFile.mockResolvedValue(JSON.stringify(validTemplateConfig));
+
+      const result = await loader.loadConfigFile(configPath);
+      expect(result).toEqual(validTemplateConfig);
+    });
   });
 
   describe('error handling', () => {

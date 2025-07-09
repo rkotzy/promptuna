@@ -9,6 +9,7 @@ import {
   ValidationResult,
   Variant,
 } from '../config/types';
+import { registerCustomFilters, getTemplateSuggestion } from '../templates/filters';
 
 export class ConfigValidator {
   private ajv: Ajv;
@@ -101,6 +102,7 @@ export class ConfigValidator {
       this.validateRoutingConfiguration(typedConfig);
       this.validateFallbackTargets(typedConfig);
       this.validateRequiredParameters(typedConfig);
+      this.validateTemplates(typedConfig);
 
       return typedConfig;
     } catch (error) {
@@ -559,4 +561,50 @@ export class ConfigValidator {
       }
     }
   }
+
+  /**
+   * Validates that all templates in the configuration have valid syntax
+   * @private
+   */
+  private validateTemplates(config: PromptunaConfig): void {
+    // Import LiquidJS for template validation
+    const { Liquid } = require('liquidjs');
+    const liquid = new Liquid({
+      strictVariables: false,
+      strictFilters: true, // Enable strict filters for validation
+    });
+
+    // Register custom filters to match TemplateProcessor
+    registerCustomFilters(liquid);
+
+    for (const [promptId, prompt] of Object.entries(config.prompts)) {
+      for (const [variantId, variant] of Object.entries(prompt.variants)) {
+        const typedVariant = variant as Variant;
+        
+        if (typedVariant.messages && Array.isArray(typedVariant.messages)) {
+          for (const [messageIndex, message] of typedVariant.messages.entries()) {
+            if (message.content?.template) {
+              try {
+                // Parse the template to validate syntax
+                liquid.parse(message.content.template);
+              } catch (error: any) {
+                throw new ConfigurationError(
+                  `Template syntax error in prompt "${promptId}", variant "${variantId}", message ${messageIndex}: ${error.message}`,
+                  {
+                    promptId,
+                    variantId,
+                    messageIndex,
+                    template: message.content.template,
+                    error: error.message,
+                    suggestion: getTemplateSuggestion(error.message),
+                  }
+                );
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
 }

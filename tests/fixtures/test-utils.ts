@@ -224,6 +224,170 @@ export const testConfigs = {
       },
     },
   } as PromptunaConfig,
+
+  // Config with invalid template syntax
+  invalidTemplates: {
+    version: '1.0.0',
+    providers: {
+      test_provider: { type: 'openai' },
+    },
+    prompts: {
+      invalid_template_prompt: {
+        description: 'A prompt with invalid template syntax',
+        variants: {
+          v_default: {
+            default: true,
+            provider: 'test_provider',
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'user',
+                content: { template: 'Hello {{name}' }, // Missing closing brace
+              },
+            ],
+            parameters: { temperature: 0.7, max_tokens: 100 },
+          },
+        },
+        routing: {
+          rules: [{ weight: 100, target: 'v_default' }],
+        },
+      },
+    },
+  } as PromptunaConfig,
+
+  // Config with invalid filter usage
+  invalidFilters: {
+    version: '1.0.0',
+    providers: {
+      test_provider: { type: 'openai' },
+    },
+    prompts: {
+      invalid_filter_prompt: {
+        description: 'A prompt with invalid filter usage',
+        variants: {
+          v_default: {
+            default: true,
+            provider: 'test_provider',
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'user',
+                content: { template: 'Hello {{name | nonexistent_filter}}' }, // Invalid filter
+              },
+            ],
+            parameters: { temperature: 0.7, max_tokens: 100 },
+          },
+        },
+        routing: {
+          rules: [{ weight: 100, target: 'v_default' }],
+        },
+      },
+    },
+  } as PromptunaConfig,
+
+  // Config with complex invalid template structures
+  complexInvalidTemplates: {
+    version: '1.0.0',
+    providers: {
+      test_provider: { type: 'openai' },
+    },
+    prompts: {
+      complex_invalid_prompt: {
+        description: 'A prompt with complex invalid template structures',
+        variants: {
+          v_missing_endif: {
+            default: true,
+            provider: 'test_provider',
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'user',
+                content: { template: '{% if condition %}Hello{% endif' }, // Missing closing %}
+              },
+            ],
+            parameters: { temperature: 0.7, max_tokens: 100 },
+          },
+          v_missing_endfor: {
+            provider: 'test_provider',
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'user',
+                content: { template: '{% for item in items %}{{item}}{% endfor' }, // Missing closing %}
+              },
+            ],
+            parameters: { temperature: 0.7, max_tokens: 100 },
+          },
+          v_empty_filter: {
+            provider: 'test_provider',
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'user',
+                content: { template: 'Hello {{name | }}' }, // Empty filter
+              },
+            ],
+            parameters: { temperature: 0.7, max_tokens: 100 },
+          },
+        },
+        routing: {
+          rules: [
+            { weight: 33, target: 'v_missing_endif' },
+            { weight: 33, target: 'v_missing_endfor' },
+            { weight: 34, target: 'v_empty_filter' },
+          ],
+        },
+      },
+    },
+  } as PromptunaConfig,
+
+  // Config with valid templates for comparison
+  validTemplates: {
+    version: '1.0.0',
+    providers: {
+      test_provider: { type: 'openai' },
+    },
+    prompts: {
+      valid_template_prompt: {
+        description: 'A prompt with valid template syntax',
+        variants: {
+          v_default: {
+            default: true,
+            provider: 'test_provider',
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'user',
+                content: { template: 'Hello {{name | default: "World"}}!' },
+              },
+              {
+                role: 'assistant',
+                content: { template: '{% if greeting %}{{greeting}}{% else %}Hi there!{% endif %}' },
+              },
+            ],
+            parameters: { temperature: 0.7, max_tokens: 100 },
+          },
+          v_with_filters: {
+            provider: 'test_provider',
+            model: 'gpt-4',
+            messages: [
+              {
+                role: 'user',
+                content: { template: 'Items: {{items | join: ", "}} ({{items | size}} total)' },
+              },
+            ],
+            parameters: { temperature: 0.7, max_tokens: 100 },
+          },
+        },
+        routing: {
+          rules: [
+            { weight: 70, target: 'v_default' },
+            { weight: 30, target: 'v_with_filters' },
+          ],
+        },
+      },
+    },
+  } as PromptunaConfig,
 };
 
 /**

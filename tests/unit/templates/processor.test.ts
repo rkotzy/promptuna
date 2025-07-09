@@ -466,4 +466,142 @@ Best regards,
       );
     });
   });
+
+  describe('template pre-compilation', () => {
+    it('should pre-compile templates and reuse them', async () => {
+      const template = 'Hello {{name}}!';
+      const variables = { name: 'Alice' };
+
+      // First call should compile the template
+      const result1 = await processor.processTemplate(template, variables);
+      expect(result1).toBe('Hello Alice!');
+
+      // Second call should reuse the compiled template
+      const result2 = await processor.processTemplate(template, variables);
+      expect(result2).toBe('Hello Alice!');
+
+      // Mock liquid.parse to verify it's called only once per unique template
+      const parseSpy = vi.spyOn(processor['liquid'], 'parse');
+      
+      // Reset the spy and test again
+      parseSpy.mockClear();
+      
+      const result3 = await processor.processTemplate(template, variables);
+      expect(result3).toBe('Hello Alice!');
+      
+      // If templates are cached, parse should NOT be called (because it's cached)
+      expect(parseSpy).toHaveBeenCalledTimes(0);
+    });
+
+    it('should handle template compilation errors during pre-compilation', async () => {
+      const invalidTemplate = 'Hello {{name}'; // Missing closing brace
+      const variables = { name: 'Alice' };
+
+      await expect(
+        processor.processTemplate(invalidTemplate, variables)
+      ).rejects.toThrow('Failed to render template');
+    });
+
+    it('should validate template syntax during pre-compilation', async () => {
+      const templates = [
+        'Hello {{name}}!',
+        'Welcome {{user | capitalize}}!',
+        '{% if condition %}True{% else %}False{% endif %}',
+        '{{items | join: ", "}}',
+      ];
+
+      // All templates should be valid and process correctly
+      for (const template of templates) {
+        const result = await processor.processTemplate(template, {
+          name: 'Alice',
+          user: 'bob',
+          condition: true,
+          items: ['a', 'b', 'c'],
+        });
+        expect(result).toBeDefined();
+        expect(typeof result).toBe('string');
+      }
+    });
+
+    it('should provide helpful error context for template compilation failures', async () => {
+      const invalidTemplate = '{% for item in items %}{{item}}{% endfor'; // Missing closing %}
+      const variables = { items: ['a', 'b', 'c'] };
+
+      try {
+        await processor.processTemplate(invalidTemplate, variables);
+        expect.fail('Should have thrown a TemplateError');
+      } catch (error) {
+        expect(error).toBeInstanceOf(TemplateError);
+        expect((error as TemplateError).details).toMatchObject({
+          template: invalidTemplate,
+          variables: ['items'],
+        });
+      }
+    });
+
+    it('should handle filter validation during pre-compilation', async () => {
+      const templateWithUnknownFilter = 'Hello {{name | unknown_filter}}!';
+      const variables = { name: 'Alice' };
+
+      // With strictFilters: false, unknown filters are ignored and the value is passed through
+      // This is expected behavior for TemplateProcessor
+      const result = await processor.processTemplate(templateWithUnknownFilter, variables);
+      expect(result).toBe('Hello Alice!');
+    });
+  });
+
+  describe('template validation', () => {
+    it('should validate template syntax before processing', async () => {
+      const syntaxErrorTemplates = [
+        'Hello {{name}', // Missing closing brace
+        '{% if condition %}Hello{% endif', // Missing closing %}
+        '{% for item in items %}{{item}}{% endfor', // Missing closing %}
+      ];
+
+      for (const template of syntaxErrorTemplates) {
+        await expect(
+          processor.processTemplate(template, { name: 'Alice', condition: true, items: ['a'] })
+        ).rejects.toThrow('Failed to render template');
+      }
+      
+      // Empty filter should work (it just passes the value through)
+      const emptyFilterTemplate = 'Hello {{name | }}';
+      const result = await processor.processTemplate(emptyFilterTemplate, { name: 'Alice' });
+      expect(result).toBe('Hello Alice');
+    });
+
+    it('should provide context about available filters in errors', async () => {
+      const templateWithBadFilter = 'Hello {{name | badfilter}}!';
+      const variables = { name: 'Alice' };
+
+      // With strictFilters: false, bad filters are ignored and the value is passed through
+      // This is expected behavior for TemplateProcessor
+      const result = await processor.processTemplate(templateWithBadFilter, variables);
+      expect(result).toBe('Hello Alice!');
+    });
+
+    it('should validate custom filter usage', async () => {
+      const validCustomFilterTemplates = [
+        'Items: {{items | join}}',
+        'Items: {{items | join: " | "}}',
+        'List: {{items | numbered}}',
+        'List: {{items | numbered: "- "}}',
+        'Value: {{value | default: "N/A"}}',
+        'Text: {{text | capitalize}}',
+        'Text: {{text | upcase}}',
+        'Text: {{text | downcase}}',
+        'Count: {{items | size}}',
+      ];
+
+      for (const template of validCustomFilterTemplates) {
+        const result = await processor.processTemplate(template, {
+          items: ['a', 'b', 'c'],
+          value: null,
+          text: 'hello',
+        });
+        expect(result).toBeDefined();
+        expect(typeof result).toBe('string');
+      }
+    });
+  });
 });

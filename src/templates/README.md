@@ -13,12 +13,16 @@ Template processing and message rendering using Liquid templating.
 
 - **`types.ts`** - Template types (`Message`, `RenderedMessage`, `TemplateError`)
 - **`processor.ts`** - `TemplateProcessor` class with Liquid template processing
+- **`filters.ts`** - Shared custom filters and error suggestion utilities
 - **`index.ts`** - Public exports
 
 ## Key Features
 
 - **Liquid templating** - Full LiquidJS support with variables, filters, and control flow
 - **Custom filters** - Prompt-specific filters like `join`, `numbered`, `default`, `capitalize`
+- **Template pre-compilation** - Templates are parsed and cached for performance
+- **Configuration-time validation** - Template syntax errors are caught during config loading
+- **Shared filter registry** - Consistent custom filters across validation and production
 - **Error handling** - Detailed error messages with template and variable context
 - **Message transformation** - Converts template messages to rendered content ready for LLMs
 

@@ -1,8 +1,10 @@
 import { Liquid } from 'liquidjs';
 import { TemplateError } from './types';
+import { registerCustomFilters, getTemplateSuggestion } from './filters';
 
 export class TemplateProcessor {
   private liquid: Liquid;
+  private templateCache: Map<string, any> = new Map();
 
   constructor() {
     this.liquid = new Liquid({
@@ -10,7 +12,7 @@ export class TemplateProcessor {
       strictFilters: false,
     });
 
-    this.registerCustomFilters();
+    registerCustomFilters(this.liquid);
   }
 
   /**
@@ -25,63 +27,56 @@ export class TemplateProcessor {
     variables: Record<string, any>
   ): Promise<string> {
     try {
-      return await this.liquid.parseAndRender(template, variables);
+      // Check if template is already compiled and cached
+      let compiledTemplate = this.templateCache.get(template);
+      
+      if (!compiledTemplate) {
+        // Parse and compile the template
+        compiledTemplate = this.liquid.parse(template);
+        this.templateCache.set(template, compiledTemplate);
+      }
+      
+      // Render the compiled template with variables
+      return await this.liquid.renderSync(compiledTemplate, variables);
     } catch (error: any) {
       throw new TemplateError(`Failed to render template: ${error.message}`, {
         template: template,
         variables: Object.keys(variables),
         error: error.message,
+        suggestion: getTemplateSuggestion(error.message),
       });
     }
   }
 
-  private registerCustomFilters(): void {
-    // Join array with separator
-    this.liquid.registerFilter('join', (array: any[], separator = ', ') => {
-      if (!Array.isArray(array)) return array;
-      return array.join(separator);
-    });
 
-    // Number list items (1-indexed)
-    this.liquid.registerFilter('numbered', (array: any[], prefix = '  ') => {
-      if (!Array.isArray(array)) return array;
-      return array.map((item, index) => `${prefix}${index + 1}. ${item}`);
-    });
+  /**
+   * Validates template syntax without rendering
+   * @param template The template string to validate
+   * @throws TemplateError if template has invalid syntax
+   */
+  validateTemplate(template: string): void {
+    try {
+      this.liquid.parse(template);
+    } catch (error: any) {
+      throw new TemplateError(`Template syntax error: ${error.message}`, {
+        template: template,
+        error: error.message,
+        suggestion: getTemplateSuggestion(error.message),
+      });
+    }
+  }
 
-    // Default value filter
-    this.liquid.registerFilter('default', (value: any, defaultValue: any) => {
-      return value !== null && value !== undefined && value !== ''
-        ? value
-        : defaultValue;
-    });
+  /**
+   * Clears the template cache
+   */
+  clearCache(): void {
+    this.templateCache.clear();
+  }
 
-    // Capitalize first letter
-    this.liquid.registerFilter('capitalize', (str: string) => {
-      if (typeof str !== 'string') return str;
-      return str.charAt(0).toUpperCase() + str.slice(1);
-    });
-
-    // Convert to lowercase
-    this.liquid.registerFilter('downcase', (str: string) => {
-      if (typeof str !== 'string') return str;
-      return str.toLowerCase();
-    });
-
-    // Convert to uppercase
-    this.liquid.registerFilter('upcase', (str: string) => {
-      if (typeof str !== 'string') return str;
-      return str.toUpperCase();
-    });
-
-    // Size/length filter
-    this.liquid.registerFilter('size', (value: any) => {
-      if (Array.isArray(value) || typeof value === 'string') {
-        return value.length;
-      }
-      if (typeof value === 'object' && value !== null) {
-        return Object.keys(value).length;
-      }
-      return 0;
-    });
+  /**
+   * Gets the number of cached templates
+   */
+  getCacheSize(): number {
+    return this.templateCache.size;
   }
 }

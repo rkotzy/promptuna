@@ -8,6 +8,7 @@ Configuration management, validation, and core SDK types.
 - Define core types for prompts, variants, and SDK configuration
 - Provide type-safe interfaces for SDK API methods
 - Manage runtime configuration (API keys, environment settings)
+- Validate template syntax during configuration loading
 
 ## Files
 

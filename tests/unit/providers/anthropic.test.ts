@@ -90,4 +90,63 @@ describe('AnthropicProvider', () => {
       } as any)
     ).rejects.toMatchObject({ reason: 'rate-limit', retryable: true });
   });
+
+  it('should normalise timeout errors', async () => {
+    createMsgSpy.mockRejectedValueOnce({
+      message: 'Gateway timeout',
+      status: 504,
+    });
+
+    await expect(
+      provider.chatCompletion({
+        model: 'claude-3-sonnet-20240229',
+        messages: [{ role: 'user', content: 'hi' }],
+      } as any)
+    ).rejects.toMatchObject({ reason: 'timeout', retryable: true });
+  });
+
+  it('should normalise authentication errors into ProviderError with reason "provider-error"', async () => {
+    createMsgSpy.mockRejectedValueOnce({
+      message: 'Invalid API key',
+      status: 401,
+    });
+
+    await expect(
+      provider.chatCompletion({
+        model: 'claude-3-sonnet-20240229',
+        messages: [{ role: 'user', content: 'hi' }],
+      } as any)
+    ).rejects.toMatchObject({
+      reason: 'provider-error',
+      retryable: false,
+    });
+  });
+
+  it('should normalise server errors into ProviderError with reason "provider-error"', async () => {
+    createMsgSpy.mockRejectedValueOnce({
+      message: 'Internal server error',
+      status: 500,
+    });
+
+    await expect(
+      provider.chatCompletion({
+        model: 'claude-3-sonnet-20240229',
+        messages: [{ role: 'user', content: 'hi' }],
+      } as any)
+    ).rejects.toMatchObject({
+      reason: 'provider-error',
+      retryable: false,
+    });
+  });
+
+  it('should handle network errors gracefully', async () => {
+    createMsgSpy.mockRejectedValueOnce(new Error('Network error'));
+
+    await expect(
+      provider.chatCompletion({
+        model: 'claude-3-sonnet-20240229',
+        messages: [{ role: 'user', content: 'hi' }],
+      } as any)
+    ).rejects.toThrow('Network error');
+  });
 });

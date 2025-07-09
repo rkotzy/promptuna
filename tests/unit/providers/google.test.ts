@@ -90,4 +90,63 @@ describe('GoogleProvider', () => {
       } as any)
     ).rejects.toMatchObject({ reason: 'timeout', retryable: true });
   });
+
+  it('should normalise rate-limit errors', async () => {
+    generateContentSpy.mockRejectedValueOnce({
+      message: 'Rate limit exceeded',
+      status: 429,
+    });
+
+    await expect(
+      provider.chatCompletion({
+        model: 'gemini',
+        messages: [{ role: 'user', content: 'hi' }],
+      } as any)
+    ).rejects.toMatchObject({ reason: 'rate-limit', retryable: true });
+  });
+
+  it('should normalise authentication errors into ProviderError with reason "provider-error"', async () => {
+    generateContentSpy.mockRejectedValueOnce({
+      message: 'Invalid API key',
+      status: 401,
+    });
+
+    await expect(
+      provider.chatCompletion({
+        model: 'gemini',
+        messages: [{ role: 'user', content: 'hi' }],
+      } as any)
+    ).rejects.toMatchObject({
+      reason: 'provider-error',
+      retryable: false,
+    });
+  });
+
+  it('should normalise server errors into ProviderError with reason "provider-error"', async () => {
+    generateContentSpy.mockRejectedValueOnce({
+      message: 'Internal server error',
+      status: 500,
+    });
+
+    await expect(
+      provider.chatCompletion({
+        model: 'gemini',
+        messages: [{ role: 'user', content: 'hi' }],
+      } as any)
+    ).rejects.toMatchObject({
+      reason: 'provider-error',
+      retryable: false,
+    });
+  });
+
+  it('should handle network errors gracefully', async () => {
+    generateContentSpy.mockRejectedValueOnce(new Error('Network error'));
+
+    await expect(
+      provider.chatCompletion({
+        model: 'gemini',
+        messages: [{ role: 'user', content: 'hi' }],
+      } as any)
+    ).rejects.toThrow('Network error');
+  });
 });

@@ -7,15 +7,28 @@ This directory contains comprehensive tests for the Promptuna SDK, ensuring robu
 ```
 tests/
 ├── fixtures/           # Test data and utilities
-│   └── test-utils.ts  # Common test fixtures and mock factories
+│   ├── assertions.ts   # Common test assertions
+│   ├── configs.ts      # Test configuration fixtures
+│   ├── mock-responses.ts # Mock provider responses
+│   ├── providers.ts    # Provider test utilities
+│   ├── test-utils.ts   # Common test fixtures and mock factories
+│   ├── times.ts        # Time-based test fixtures
+│   └── users.ts        # User context fixtures
+├── helpers/            # Test helper functions
+│   └── time.ts         # Time manipulation helpers
 ├── integration/        # End-to-end integration tests
 │   └── promptuna.test.ts
-├── unit/              # Unit tests organized by module
-│   ├── config/        # Configuration loading and validation
-│   ├── routing/       # Routing and variant selection
-│   ├── shared/        # Parameter normalization utilities
-│   └── templates/     # Template processing
-└── setup.ts           # Global test setup and mocking
+├── unit/               # Unit tests organized by module
+│   ├── config/         # Configuration loading and validation
+│   ├── fallbacks/      # Fallback executor tests
+│   ├── observability/  # Telemetry and analytics tests
+│   ├── providers/      # Provider implementation tests
+│   ├── routing/        # Routing and variant selection
+│   ├── shared/         # Parameter normalization utilities
+│   ├── templates/      # Template processing
+│   ├── types/          # Type compilation tests
+│   └── validate/       # CLI validation tests
+└── setup.ts            # Global test setup and mocking
 
 ```
 
@@ -61,6 +74,7 @@ The test suite aims for comprehensive coverage of core functionality:
 - **Template Processing**: 98.5% coverage - Tests Liquid template rendering, custom filters, variable interpolation
 - **Config Validation**: 85%+ coverage - Tests JSON schema validation, business rule validation, error handling
 - **Parameter Normalization**: 97% coverage - Tests provider-specific parameter mapping and constraints
+- **Provider Error Handling**: Comprehensive error testing for all providers (OpenAI, Anthropic, Google)
 
 ### Coverage Thresholds
 
@@ -74,11 +88,14 @@ The project enforces minimum coverage thresholds:
 
 ### Fixtures and Utilities
 
-**`test-utils.ts`** provides:
-- Pre-configured test configurations for different scenarios
-- Mock provider factories with realistic responses
-- Helper functions for common test patterns
-- Centralized test data management
+**Fixtures** provide organized test data:
+- **`test-utils.ts`**: Main test utilities and configuration fixtures
+- **`configs.ts`**: Pre-configured test configurations for different scenarios
+- **`mock-responses.ts`**: Mock provider responses with realistic data
+- **`providers.ts`**: Provider test utilities and factories
+- **`assertions.ts`**: Common test assertions and validation helpers
+- **`users.ts`**: User context fixtures for routing tests
+- **`times.ts`**: Time-based fixtures for phased rollout testing
 
 ### Mocking Strategy
 
@@ -93,9 +110,14 @@ Tests use comprehensive mocking to ensure isolation:
 Each module has dedicated unit tests:
 
 - **Config Tests**: Validate configuration loading, JSON schema validation, and error handling
+- **Fallbacks Tests**: Test fallback executor logic and error recovery
+- **Observability Tests**: Verify telemetry collection, timing, and analytics
+- **Provider Tests**: Test all provider implementations with comprehensive error handling
 - **Routing Tests**: Test variant selection algorithms, routing rules, and edge cases
+- **Shared Tests**: Test parameter normalization across different providers
 - **Template Tests**: Verify Liquid template processing, custom filters, and variable interpolation
-- **Parameter Tests**: Test parameter normalization across different providers
+- **Types Tests**: Test TypeScript compilation and type definitions
+- **Validate Tests**: Test CLI validation and configuration checking
 
 ### Integration Tests
 

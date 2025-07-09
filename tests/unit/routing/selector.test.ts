@@ -242,7 +242,7 @@ describe('Variant Selector', () => {
     });
 
     it('should use Math.random for users without userId', () => {
-      const mathRandomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5);
+      vi.spyOn(Math, 'random').mockReturnValue(0.5);
 
       const params: VariantSelectorParams = {
         prompt: testConfigs.complexRouting.prompts.complex_prompt,
@@ -253,9 +253,7 @@ describe('Variant Selector', () => {
 
       selectVariant(params);
 
-      expect(mathRandomSpy).toHaveBeenCalled();
-
-      mathRandomSpy.mockRestore();
+      expect(Math.random).toHaveBeenCalled();
     });
   });
 

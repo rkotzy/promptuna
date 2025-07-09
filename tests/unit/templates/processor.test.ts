@@ -461,7 +461,9 @@ Best regards,
 
       const result = await processor.processTemplate(template, variables);
 
-      expect(result).toMatchSnapshot();
+      expect(result).toBe(
+        'Hello, Alice!\n\n\nHere are your tasks (3 total):\n  1. Review code  2. Write tests  3. Deploy app\n\n\nBest regards,\nBot Assistant'
+      );
     });
   });
 });

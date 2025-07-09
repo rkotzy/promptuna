@@ -178,60 +178,63 @@ describe('buildProviderParams', () => {
     });
   });
 
-  describe('parameter-specific mappings', () => {
-    it('should handle different parameter names across providers', () => {
-      const canonical = {
-        max_tokens: 100,
-        top_p: 0.9,
-      };
+  describe('parameter-specific mappings (table-driven)', () => {
+    const cases = [
+      {
+        provider: 'openai',
+        input: { max_tokens: 50, top_p: 0.9 },
+        expected: { max_completion_tokens: 50, top_p: 0.9 },
+      },
+      {
+        provider: 'anthropic',
+        input: { max_tokens: 50, top_p: 0.9 },
+        expected: { max_tokens: 50, top_p: 0.9 },
+      },
+      {
+        provider: 'google',
+        input: { max_tokens: 50, top_p: 0.9 },
+        expected: { maxOutputTokens: 50, topP: 0.9 },
+      },
+      {
+        provider: 'openai',
+        input: {
+          temperature: 0.7,
+          frequency_penalty: 0.1,
+          presence_penalty: 0.2,
+        },
+        expected: {
+          temperature: 1.4,
+          frequency_penalty: 0.1,
+          presence_penalty: 0.2,
+        },
+      },
+      {
+        provider: 'anthropic',
+        input: {
+          temperature: 0.7,
+          frequency_penalty: 0.1,
+          presence_penalty: 0.2,
+        },
+        expected: { temperature: 0.7 }, // unsupported params dropped
+      },
+      {
+        provider: 'google',
+        input: {
+          temperature: 0.7,
+          frequency_penalty: 0.1,
+          presence_penalty: 0.2,
+        },
+        expected: {
+          temperature: 1.4,
+          frequencyPenalty: 0.1,
+          presencePenalty: 0.2,
+        },
+      },
+    ] as const;
 
-      const openaiResult = buildProviderParams('openai', canonical);
-      const anthropicResult = buildProviderParams('anthropic', canonical);
-      const googleResult = buildProviderParams('google', canonical);
-
-      expect(openaiResult).toEqual({
-        max_completion_tokens: 100,
-        top_p: 0.9,
-      });
-
-      expect(anthropicResult).toEqual({
-        max_tokens: 100,
-        top_p: 0.9,
-      });
-
-      expect(googleResult).toEqual({
-        maxOutputTokens: 100,
-        topP: 0.9,
-      });
-    });
-
-    it('should handle parameters supported by some providers but not others', () => {
-      const canonical = {
-        temperature: 0.7,
-        frequency_penalty: 0.1,
-        presence_penalty: 0.2,
-      };
-
-      const openaiResult = buildProviderParams('openai', canonical);
-      const anthropicResult = buildProviderParams('anthropic', canonical);
-      const googleResult = buildProviderParams('google', canonical);
-
-      expect(openaiResult).toEqual({
-        temperature: 1.4, // 0.7 * 2 due to scaling
-        frequency_penalty: 0.1,
-        presence_penalty: 0.2,
-      });
-
-      expect(anthropicResult).toEqual({
-        temperature: 0.7,
-        // frequency_penalty and presence_penalty not supported by Anthropic
-      });
-
-      expect(googleResult).toEqual({
-        temperature: 1.4, // 0.7 * 2 due to scaling
-        frequencyPenalty: 0.1,
-        presencePenalty: 0.2,
-      });
+    it.each(cases)('$provider mapping', ({ provider, input, expected }) => {
+      const result = buildProviderParams(provider as any, input as any);
+      expect(result).toEqual(expected);
     });
   });
 

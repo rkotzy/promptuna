@@ -55,6 +55,9 @@ export default defineConfig({
 
     // Parallel execution
     pool: 'threads',
+
+    // Ensure CI fails when no tests are found
+    passWithNoTests: false,
   },
 
   // Resolve configuration to match your tsconfig

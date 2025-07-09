@@ -461,13 +461,7 @@ Best regards,
 
       const result = await processor.processTemplate(template, variables);
 
-      expect(result).toContain('Hello, Alice!');
-      expect(result).toContain('Here are your tasks (3 total):');
-      expect(result).toContain('  1. Review code');
-      expect(result).toContain('  2. Write tests');
-      expect(result).toContain('  3. Deploy app');
-      expect(result).toContain('Best regards,');
-      expect(result).toContain('Bot Assistant');
+      expect(result).toMatchSnapshot();
     });
   });
 });

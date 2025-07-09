@@ -313,7 +313,9 @@ export const testConfigs = {
             messages: [
               {
                 role: 'user',
-                content: { template: '{% for item in items %}{{item}}{% endfor' }, // Missing closing %}
+                content: {
+                  template: '{% for item in items %}{{item}}{% endfor',
+                }, // Missing closing %}
               },
             ],
             parameters: { temperature: 0.7, max_tokens: 100 },
@@ -362,7 +364,10 @@ export const testConfigs = {
               },
               {
                 role: 'assistant',
-                content: { template: '{% if greeting %}{{greeting}}{% else %}Hi there!{% endif %}' },
+                content: {
+                  template:
+                    '{% if greeting %}{{greeting}}{% else %}Hi there!{% endif %}',
+                },
               },
             ],
             parameters: { temperature: 0.7, max_tokens: 100 },
@@ -373,7 +378,10 @@ export const testConfigs = {
             messages: [
               {
                 role: 'user',
-                content: { template: 'Items: {{items | join: ", "}} ({{items | size}} total)' },
+                content: {
+                  template:
+                    'Items: {{items | join: ", "}} ({{items | size}} total)',
+                },
               },
             ],
             parameters: { temperature: 0.7, max_tokens: 100 },

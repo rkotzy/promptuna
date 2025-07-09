@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { registerCustomFilters, getTemplateSuggestion, CUSTOM_FILTER_NAMES } from '../../../src/templates/filters';
+import { describe, it, expect, vi } from 'vitest';
+import {
+  registerCustomFilters,
+  getTemplateSuggestion,
+  CUSTOM_FILTER_NAMES,
+} from '../../../src/templates/filters';
 
 describe('Template Filters', () => {
   describe('registerCustomFilters', () => {
@@ -11,8 +15,10 @@ describe('Template Filters', () => {
       registerCustomFilters(mockLiquid);
 
       // Should register all filter names
-      expect(mockLiquid.registerFilter).toHaveBeenCalledTimes(CUSTOM_FILTER_NAMES.length);
-      
+      expect(mockLiquid.registerFilter).toHaveBeenCalledTimes(
+        CUSTOM_FILTER_NAMES.length
+      );
+
       // Verify each filter was registered
       CUSTOM_FILTER_NAMES.forEach(filterName => {
         expect(mockLiquid.registerFilter).toHaveBeenCalledWith(
@@ -30,10 +36,13 @@ describe('Template Filters', () => {
       registerCustomFilters(mockLiquid);
 
       // Get the registered functions
-      const registeredFilters = mockLiquid.registerFilter.mock.calls.reduce((acc, [name, fn]) => {
-        acc[name] = fn;
-        return acc;
-      }, {} as Record<string, Function>);
+      const registeredFilters = mockLiquid.registerFilter.mock.calls.reduce(
+        (acc, [name, fn]) => {
+          acc[name] = fn;
+          return acc;
+        },
+        {} as Record<string, Function>
+      );
 
       // Test join filter
       expect(registeredFilters.join(['a', 'b', 'c'])).toBe('a, b, c');
@@ -41,8 +50,15 @@ describe('Template Filters', () => {
       expect(registeredFilters.join('not-an-array')).toBe('not-an-array');
 
       // Test numbered filter
-      expect(registeredFilters.numbered(['a', 'b', 'c'])).toEqual(['  1. a', '  2. b', '  3. c']);
-      expect(registeredFilters.numbered(['a', 'b'], '- ')).toEqual(['- 1. a', '- 2. b']);
+      expect(registeredFilters.numbered(['a', 'b', 'c'])).toEqual([
+        '  1. a',
+        '  2. b',
+        '  3. c',
+      ]);
+      expect(registeredFilters.numbered(['a', 'b'], '- ')).toEqual([
+        '- 1. a',
+        '- 2. b',
+      ]);
       expect(registeredFilters.numbered('not-an-array')).toBe('not-an-array');
 
       // Test default filter
@@ -85,19 +101,19 @@ describe('Template Filters', () => {
       expect(getTemplateSuggestion('unexpected token')).toBe(
         'Check for missing closing braces }} or %} in your template'
       );
-      
+
       expect(getTemplateSuggestion('filter error')).toBe(
         'Available filters: join, numbered, default, capitalize, downcase, upcase, size'
       );
-      
+
       expect(getTemplateSuggestion('EOF error')).toBe(
         'Template appears to be incomplete - check for missing closing tags'
       );
-      
+
       expect(getTemplateSuggestion('Unknown filter some message')).toBe(
         'Available custom filters: join, numbered, default, capitalize, downcase, upcase, size'
       );
-      
+
       expect(getTemplateSuggestion('some other error')).toBe(
         'Check the template syntax for missing braces, quotes, or closing tags'
       );
@@ -113,7 +129,7 @@ describe('Template Filters', () => {
         'capitalize',
         'downcase',
         'upcase',
-        'size'
+        'size',
       ]);
     });
 

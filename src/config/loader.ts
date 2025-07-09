@@ -4,7 +4,10 @@ import {
   SUPPORTED_SCHEMA_VERSIONS,
   isSchemaVersionSupported,
 } from '../version';
-import { registerCustomFilters, getTemplateSuggestion } from '../templates/filters';
+import {
+  registerCustomFilters,
+  getTemplateSuggestion,
+} from '../templates/filters';
 
 /**
  * Lightweight configuration loader for production environments.
@@ -165,9 +168,12 @@ export class ConfigLoader {
     for (const [promptId, prompt] of Object.entries(config.prompts)) {
       for (const [variantId, variant] of Object.entries(prompt.variants)) {
         const typedVariant = variant as Variant;
-        
+
         if (typedVariant.messages && Array.isArray(typedVariant.messages)) {
-          for (const [messageIndex, message] of typedVariant.messages.entries()) {
+          for (const [
+            messageIndex,
+            message,
+          ] of typedVariant.messages.entries()) {
             if (message.content?.template) {
               try {
                 // Parse the template to validate syntax
@@ -191,5 +197,4 @@ export class ConfigLoader {
       }
     }
   }
-
 }

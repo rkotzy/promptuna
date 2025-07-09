@@ -29,13 +29,13 @@ export class TemplateProcessor {
     try {
       // Check if template is already compiled and cached
       let compiledTemplate = this.templateCache.get(template);
-      
+
       if (!compiledTemplate) {
         // Parse and compile the template
         compiledTemplate = this.liquid.parse(template);
         this.templateCache.set(template, compiledTemplate);
       }
-      
+
       // Render the compiled template with variables
       return await this.liquid.renderSync(compiledTemplate, variables);
     } catch (error: any) {
@@ -47,7 +47,6 @@ export class TemplateProcessor {
       });
     }
   }
-
 
   /**
    * Validates template syntax without rendering

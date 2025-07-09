@@ -482,13 +482,13 @@ Best regards,
 
       // Mock liquid.parse to verify it's called only once per unique template
       const parseSpy = vi.spyOn(processor['liquid'], 'parse');
-      
+
       // Reset the spy and test again
       parseSpy.mockClear();
-      
+
       const result3 = await processor.processTemplate(template, variables);
       expect(result3).toBe('Hello Alice!');
-      
+
       // If templates are cached, parse should NOT be called (because it's cached)
       expect(parseSpy).toHaveBeenCalledTimes(0);
     });
@@ -545,7 +545,10 @@ Best regards,
 
       // With strictFilters: false, unknown filters are ignored and the value is passed through
       // This is expected behavior for TemplateProcessor
-      const result = await processor.processTemplate(templateWithUnknownFilter, variables);
+      const result = await processor.processTemplate(
+        templateWithUnknownFilter,
+        variables
+      );
       expect(result).toBe('Hello Alice!');
     });
   });
@@ -560,13 +563,19 @@ Best regards,
 
       for (const template of syntaxErrorTemplates) {
         await expect(
-          processor.processTemplate(template, { name: 'Alice', condition: true, items: ['a'] })
+          processor.processTemplate(template, {
+            name: 'Alice',
+            condition: true,
+            items: ['a'],
+          })
         ).rejects.toThrow('Failed to render template');
       }
-      
+
       // Empty filter should work (it just passes the value through)
       const emptyFilterTemplate = 'Hello {{name | }}';
-      const result = await processor.processTemplate(emptyFilterTemplate, { name: 'Alice' });
+      const result = await processor.processTemplate(emptyFilterTemplate, {
+        name: 'Alice',
+      });
       expect(result).toBe('Hello Alice');
     });
 
@@ -576,7 +585,10 @@ Best regards,
 
       // With strictFilters: false, bad filters are ignored and the value is passed through
       // This is expected behavior for TemplateProcessor
-      const result = await processor.processTemplate(templateWithBadFilter, variables);
+      const result = await processor.processTemplate(
+        templateWithBadFilter,
+        variables
+      );
       expect(result).toBe('Hello Alice!');
     });
 

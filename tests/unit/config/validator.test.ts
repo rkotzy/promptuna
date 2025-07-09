@@ -442,9 +442,9 @@ describe('ConfigValidator', () => {
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
                 messages: [
-                  { 
-                    role: 'user' as const, 
-                    content: { template: 'Hello {{name}' } // Missing closing brace
+                  {
+                    role: 'user' as const,
+                    content: { template: 'Hello {{name}' }, // Missing closing brace
                   },
                 ],
                 parameters: { temperature: 0.7 },
@@ -482,9 +482,11 @@ describe('ConfigValidator', () => {
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
                 messages: [
-                  { 
-                    role: 'user' as const, 
-                    content: { template: 'Hello {{name | nonexistent_filter}}' } // Invalid filter
+                  {
+                    role: 'user' as const,
+                    content: {
+                      template: 'Hello {{name | nonexistent_filter}}',
+                    }, // Invalid filter
                   },
                 ],
                 parameters: { temperature: 0.7 },
@@ -522,9 +524,9 @@ describe('ConfigValidator', () => {
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
                 messages: [
-                  { 
-                    role: 'user' as const, 
-                    content: { template: '{% if condition %}Hello{% endif' } // Missing closing %}
+                  {
+                    role: 'user' as const,
+                    content: { template: '{% if condition %}Hello{% endif' }, // Missing closing %}
                   },
                 ],
                 parameters: { temperature: 0.7 },
@@ -562,13 +564,16 @@ describe('ConfigValidator', () => {
                 provider: 'openai_gpt4',
                 model: 'gpt-4',
                 messages: [
-                  { 
-                    role: 'user' as const, 
-                    content: { template: 'Hello {{name | default: "World"}}!' }
+                  {
+                    role: 'user' as const,
+                    content: { template: 'Hello {{name | default: "World"}}!' },
                   },
-                  { 
-                    role: 'assistant' as const, 
-                    content: { template: '{% if greeting %}{{greeting}}{% else %}Hi there!{% endif %}' }
+                  {
+                    role: 'assistant' as const,
+                    content: {
+                      template:
+                        '{% if greeting %}{{greeting}}{% else %}Hi there!{% endif %}',
+                    },
                   },
                 ],
                 parameters: { temperature: 0.7 },

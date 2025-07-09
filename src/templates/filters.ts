@@ -83,10 +83,10 @@ export function getTemplateSuggestion(errorMessage: string): string {
  */
 export const CUSTOM_FILTER_NAMES = [
   'join',
-  'numbered', 
+  'numbered',
   'default',
   'capitalize',
   'downcase',
   'upcase',
-  'size'
+  'size',
 ] as const;

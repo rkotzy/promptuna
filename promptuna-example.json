@@ -16,7 +16,8 @@
       "required": ["greeting"],
       "properties": {
         "greeting": { "type": "string" }
-      }
+      },
+      "additionalProperties": false
     }
   },
 
@@ -27,7 +28,7 @@
       "variants": {
         "v_default": {
           "provider": "openai",
-          "model": "gpt-3.5-turbo",
+          "model": "gpt-4o",
           "default": true,
           "parameters": { "temperature": 0.7, "max_tokens": 100 },
           "messages": [
@@ -78,7 +79,7 @@
 
         "v_beta": {
           "provider": "openai",
-          "model": "gpt-3.5-turbo",
+          "model": "gpt-4o",
           "parameters": { "temperature": 0.8 },
           "messages": [
             {
@@ -136,7 +137,7 @@
       "variants": {
         "v_default": {
           "provider": "openai",
-          "model": "gpt-3.5-turbo",
+          "model": "gpt-4o",
           "default": true,
           "parameters": { "temperature": 0.3, "max_tokens": 60 },
           "messages": [

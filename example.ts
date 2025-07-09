@@ -1,4 +1,4 @@
-import { Promptuna } from './src/index.ts';
+import { Promptuna } from './src/index.js';
 import { ProviderError } from './src/errors';
 import type {
   Provider,
@@ -6,7 +6,6 @@ import type {
   ChatCompletionResponse,
 } from './src/providers/types';
 
-// Example usage of the Promptuna SDK
 async function main() {
   // Initialize the SDK with config file and API keys
   const promptuna = new Promptuna({
@@ -20,11 +19,25 @@ async function main() {
   });
 
   try {
-    // Load and validate the configuration
-    console.log('Loading and validating configuration...');
-    const config = await promptuna.loadAndValidateConfig();
+    // Optional: Full validation for CI/CD environments
+    try {
+      console.log('Running full validation...');
+      const { ConfigValidator } = await import(
+        './src/validate/ConfigValidator.js'
+      );
+      await new ConfigValidator().validateAndLoadConfigFile(
+        './promptuna-example.json'
+      );
+      console.log('✅ Full validation passed');
+    } catch (error: any) {
+      console.log('❌ Full validation failed:', error.message);
+      throw error;
+    }
 
-    console.log('✅ Configuration is valid!');
+    // Force reload configuration from disk (minimal validation)
+    console.log('Loading configuration...');
+    const config = await promptuna.reloadConfig();
+
     console.log(`Loaded configuration version: ${config.version}`);
     console.log(`Number of providers: ${Object.keys(config.providers).length}`);
     console.log(`Number of prompts: ${Object.keys(config.prompts).length}`);
@@ -37,7 +50,7 @@ async function main() {
     const simpleMessages = await promptuna.getTemplate({
       promptId: 'greeting',
       variantId: 'v_default', // Specify concrete default variant
-      variables: simpleVariables
+      variables: simpleVariables,
     });
 
     console.log("\n🔹 Simple template (name: 'Alice'):");
@@ -61,7 +74,7 @@ async function main() {
     const complexMessages = await promptuna.getTemplate({
       promptId: 'greeting',
       variantId: 'v_us', // Specific variant
-      variables: complexVariables
+      variables: complexVariables,
     });
 
     console.log('\n🔹 Complex template (nested objects):');
@@ -79,7 +92,7 @@ async function main() {
           promptId: 'greeting',
           variables: { name: 'Charlie', city: 'New York' },
           userId: 'user-us-123',
-          tags: ['US']
+          tags: ['US'],
         });
         console.log('\n🔹 US tag (user-us-123):');
         console.log(`  Model: ${responseUS.model}`);
@@ -90,7 +103,7 @@ async function main() {
           promptId: 'greeting',
           variables: { name: 'Dana', city: 'Austin' },
           userId: 'user-beta-456',
-          tags: ['beta']
+          tags: ['beta'],
         });
         console.log('\n🔹 Beta tag (user-beta-456):');
         console.log(`  Model: ${responseBeta.model}`);
@@ -100,7 +113,7 @@ async function main() {
         const responseNoTag = await promptuna.chatCompletion({
           promptId: 'greeting',
           variables: { name: 'Eve', city: 'London' },
-          userId: 'user-general-789' // no tags provided
+          userId: 'user-general-789', // no tags provided
         });
         console.log('\n🔹 No tag (user-general-789):');
         console.log(`  Model: ${responseNoTag.model}`);
@@ -134,7 +147,7 @@ async function main() {
         const responseFallback = await promptuna.chatCompletion({
           promptId: 'greeting',
           variables: { name: 'Frank', city: 'Paris' },
-          userId: 'user-fallback-999'
+          userId: 'user-fallback-999',
         });
 
         console.log(
@@ -152,17 +165,22 @@ async function main() {
           variables: { name: 'Sam' },
           messageHistory: [
             { role: 'user', content: 'Hello, I need help with my account' },
-            { role: 'assistant', content: 'I would be happy to help you with your account. What specific issue are you experiencing?' },
-            { role: 'user', content: 'I forgot my password' }
+            {
+              role: 'assistant',
+              content:
+                'I would be happy to help you with your account. What specific issue are you experiencing?',
+            },
+            { role: 'user', content: 'I forgot my password' },
           ],
-          userId: 'user-history-demo'
+          userId: 'user-history-demo',
         });
 
         console.log('\n🔹 With conversation history:');
         console.log(`  Model: ${historyResponse.model}`);
         console.log(`  Content: ${historyResponse.choices[0].message.content}`);
-        console.log(`  (Note: Response includes context from previous messages)`);
-
+        console.log(
+          `  (Note: Response includes context from previous messages)`
+        );
       } catch (chatError) {
         console.log('\n⚠️  Chat completion failed:');
         console.log(

@@ -3,7 +3,7 @@ import addFormats from 'ajv-formats';
 import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { PromptunaConfig, ConfigurationError, ValidationResult, Variant } from './types';
+import { PromptunaConfig, ConfigurationError, ValidationResult, Variant } from '../config/types';
 
 
 export class ConfigValidator {

@@ -183,12 +183,12 @@ const messages = await promptuna.getTemplate({
 // Returns: [{ role: 'system', content: '...' }, { role: 'user', content: 'Say hello to Alice!' }]
 ```
 
-#### `loadAndValidateConfig()`
+#### `reloadConfig()`
 
-Manually load and validate the configuration file.
+Force a reload of the configuration file from disk (bypasses cache).
 
 ```typescript
-const config = await promptuna.loadAndValidateConfig();
+const config = await promptuna.reloadConfig();
 console.log(`Loaded ${Object.keys(config.prompts).length} prompts`);
 ```
 

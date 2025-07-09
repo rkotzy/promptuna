@@ -1,7 +1,7 @@
 import { resolve } from 'path';
 import packageJson from '../package.json';
 import type { PromptunaObservability } from './observability/types';
-import { ConfigValidator } from './config/validator';
+import { ConfigLoader } from './config/loader.js';
 import {
   PromptunaConfig,
   PromptunaRuntimeConfig,
@@ -10,7 +10,7 @@ import {
   Prompt,
   ChatCompletionParams,
   GetTemplateParams,
-} from './config/types';
+} from './config/types.js';
 import { RenderedMessage } from './templates/types';
 import { TemplateProcessor } from './templates/processor';
 import {
@@ -29,23 +29,23 @@ import { buildProviderParams } from './shared/utils/normalizeParameters';
 import type { ProviderId } from './shared/types';
 
 export class Promptuna {
-  private configPath: string;
-  private validator: ConfigValidator;
-  private templateProcessor: TemplateProcessor;
-  private config: PromptunaConfig | null = null;
-  private configPromise: Promise<PromptunaConfig> | null = null;
-  private providers: Map<string, any> = new Map();
-  private runtimeConfig: PromptunaRuntimeConfig;
+  protected configPath: string;
+  protected loader: ConfigLoader;
+  protected templateProcessor: TemplateProcessor;
+  protected config: PromptunaConfig | null = null;
+  protected configPromise: Promise<PromptunaConfig> | null = null;
+  protected providers: Map<string, any> = new Map();
+  protected runtimeConfig: PromptunaRuntimeConfig;
 
   // Observability helpers
-  private sdkVersion: string;
-  private environment: 'dev' | 'prod';
-  private emitObservability?: (event: PromptunaObservability) => void;
+  protected sdkVersion: string;
+  protected environment: 'dev' | 'prod';
+  protected emitObservability?: (event: PromptunaObservability) => void;
 
   constructor(config: PromptunaRuntimeConfig) {
     this.runtimeConfig = config;
     this.configPath = resolve(config.configPath);
-    this.validator = new ConfigValidator();
+    this.loader = new ConfigLoader();
     this.templateProcessor = new TemplateProcessor();
 
     this.sdkVersion = (packageJson as any).version ?? 'unknown';
@@ -55,15 +55,14 @@ export class Promptuna {
   }
 
   /**
-   * Loads and validates the configuration file against the Promptuna schema
-   * Always re-reads the file and updates the internal cache
-   * @returns The validated configuration object
+   * Forces a reload of the configuration file from disk
+   * Bypasses the cache and updates the internal configuration
+   * @returns The reloaded configuration object
    * @throws ConfigurationError if the configuration is invalid or cannot be loaded
    */
-  async loadAndValidateConfig(): Promise<PromptunaConfig> {
-    this.config = await this.validator.validateAndLoadConfigFile(
-      this.configPath
-    );
+  async reloadConfig(): Promise<PromptunaConfig> {
+    this.config = await this.loader.loadConfigFile(this.configPath);
+    this.configPromise = null; // Clear the promise cache
     return this.config;
   }
 
@@ -80,13 +79,13 @@ export class Promptuna {
     }
 
     if (!this.configPromise) {
-      this.configPromise = this.loadAndValidateConfig();
+      this.configPromise = this.loader.loadConfigFile(this.configPath).then(config => {
+        this.config = config;
+        return config;
+      });
     }
 
-    this.config = await this.configPromise;
-    this.configPromise = null;
-
-    return this.config;
+    return this.configPromise;
   }
 
   /**

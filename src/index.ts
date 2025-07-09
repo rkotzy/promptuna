@@ -1,31 +1,31 @@
-export { Promptuna } from './Promptuna';
+export { Promptuna } from './Promptuna.js';
 
 // Configuration
-export { ConfigValidator } from './config';
+export { ConfigLoader } from './config/index.js';
 export type { 
   PromptunaConfig, 
   PromptunaRuntimeConfig, 
   ProviderConfig,
   ValidationResult
-} from './config';
+} from './config/index.js';
 
 // Core types
 export type { 
   Variant, 
   Prompt, 
   ExecutionError 
-} from './config';
+} from './config/index.js';
 
 export type { 
   ChatCompletionParams, 
   GetTemplateParams 
-} from './config';
+} from './config/index.js';
 
 // Templates
 export type { 
   Message, 
   RenderedMessage 
-} from './templates';
+} from './templates/index.js';
 
 // Providers
 export type {
@@ -33,14 +33,14 @@ export type {
   ChatCompletionOptions,
   ChatCompletionResponse,
   Provider
-} from './providers';
+} from './providers/index.js';
 
 // Response types
 export type {
   ResponseFormat,
   ModelParams,
   FallbackTarget
-} from './responses';
+} from './responses/index.js';
 
 // Routing
 export type {
@@ -48,11 +48,11 @@ export type {
   RoutingRule,
   PhasedRule,
   Routing
-} from './routing';
+} from './routing/index.js';
 
 // Observability
 export type {
   PromptunaObservability,
   TokenUsage,
   RoutingReason
-} from './observability';
+} from './observability/index.js';

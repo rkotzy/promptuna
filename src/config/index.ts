@@ -1,4 +1,4 @@
-export { ConfigValidator } from './validator';
+export { ConfigLoader } from './loader';
 export type {
   PromptunaConfig,
   PromptunaRuntimeConfig,

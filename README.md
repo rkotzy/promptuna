@@ -110,6 +110,7 @@ async function main() {
     onObservability: console.log,
   });
 
+  // Configuration is loaded automatically on first API call
   try {
     // Generate a chat completion
     const response = await promptuna.chatCompletion({
@@ -183,14 +184,6 @@ const messages = await promptuna.getTemplate({
 // Returns: [{ role: 'system', content: '...' }, { role: 'user', content: 'Say hello to Alice!' }]
 ```
 
-#### `reloadConfig()`
-
-Force a reload of the configuration file from disk (bypasses cache).
-
-```typescript
-const config = await promptuna.reloadConfig();
-console.log(`Loaded ${Object.keys(config.prompts).length} prompts`);
-```
 
 ## Multi-Provider Example
 

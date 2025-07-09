@@ -55,21 +55,10 @@ export class Promptuna {
   }
 
   /**
-   * Forces a reload of the configuration file from disk
-   * Bypasses the cache and updates the internal configuration
-   * @returns The reloaded configuration object
-   * @throws ConfigurationError if the configuration is invalid or cannot be loaded
-   */
-  async reloadConfig(): Promise<PromptunaConfig> {
-    this.config = await this.loader.loadConfigFile(this.configPath);
-    this.configPromise = null; // Clear the promise cache
-    return this.config;
-  }
-
-  /**
    * Returns the cached configuration, loading and validating it on first access.
    * If multiple calls happen concurrently before the first load completes, they
    * will all await the same in-flight Promise.
+   * @private
    * @returns The validated configuration object
    * @throws ConfigurationError if the configuration is invalid or cannot be loaded
    */

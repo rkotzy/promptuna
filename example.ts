@@ -34,13 +34,7 @@ async function main() {
       throw error;
     }
 
-    // Force reload configuration from disk (minimal validation)
-    console.log('Loading configuration...');
-    const config = await promptuna.reloadConfig();
-
-    console.log(`Loaded configuration version: ${config.version}`);
-    console.log(`Number of providers: ${Object.keys(config.providers).length}`);
-    console.log(`Number of prompts: ${Object.keys(config.prompts).length}`);
+    // Configuration is loaded automatically on first use
 
     // Demonstrate template processing
     console.log('\n--- Template Processing Demo ---');

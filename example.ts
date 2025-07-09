@@ -34,8 +34,6 @@ async function main() {
       throw error;
     }
 
-    // Configuration is loaded automatically on first use
-
     // Demonstrate template processing
     console.log('\n--- Template Processing Demo ---');
 

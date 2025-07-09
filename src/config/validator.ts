@@ -188,6 +188,10 @@ export class ConfigValidator {
             }
           );
         }
+        
+        // Validate structured output requirements
+        this.validateStrictObjectSchemas(schema, schemaId);
+        this.validateAllFieldsRequired(schema, schemaId);
       }
     }
 
@@ -392,6 +396,114 @@ export class ConfigValidator {
           throw new ConfigurationError(
             `Variant "${variantId}" of prompt "${promptId}" is missing required parameter(s) for provider "${provider.type}": ${missing.join(', ')}`
           );
+        }
+      }
+    }
+  }
+
+  /**
+   * Validates that object schemas have additionalProperties: false for structured outputs
+   * @private
+   */
+  private validateStrictObjectSchemas(schema: any, schemaId: string): void {
+    this.validateStrictObjectSchemasRecursively(schema, schemaId, []);
+  }
+
+  /**
+   * Recursively validates additionalProperties: false on all object schemas
+   * @private
+   */
+  private validateStrictObjectSchemasRecursively(schema: any, schemaId: string, path: string[]): void {
+    if (schema && typeof schema === 'object') {
+      if (schema.type === 'object') {
+        if (schema.additionalProperties !== false) {
+          const schemaPath = path.length > 0 ? `${schemaId}.${path.join('.')}` : schemaId;
+          throw new ConfigurationError(
+            `Schema "${schemaPath}" requires additionalProperties: false for structured outputs`,
+            {
+              schemaId,
+              schemaPath,
+              currentValue: schema.additionalProperties,
+              suggestion: 'Add "additionalProperties": false to the object schema'
+            }
+          );
+        }
+        
+        // Recurse into properties
+        if (schema.properties) {
+          for (const [propName, propSchema] of Object.entries(schema.properties)) {
+            this.validateStrictObjectSchemasRecursively(propSchema, schemaId, [...path, 'properties', propName]);
+          }
+        }
+      }
+      
+      // Handle arrays
+      if (schema.type === 'array' && schema.items) {
+        this.validateStrictObjectSchemasRecursively(schema.items, schemaId, [...path, 'items']);
+      }
+      
+      // Handle oneOf/anyOf/allOf
+      const compositionTypes = ['oneOf', 'anyOf', 'allOf'];
+      for (const compositionType of compositionTypes) {
+        if (schema[compositionType] && Array.isArray(schema[compositionType])) {
+          schema[compositionType].forEach((subSchema: any, index: number) => {
+            this.validateStrictObjectSchemasRecursively(subSchema, schemaId, [...path, compositionType, index.toString()]);
+          });
+        }
+      }
+    }
+  }
+
+  /**
+   * Validates that all object properties are marked as required for structured outputs
+   * @private
+   */
+  private validateAllFieldsRequired(schema: any, schemaId: string): void {
+    this.validateAllFieldsRequiredRecursively(schema, schemaId, []);
+  }
+
+  /**
+   * Recursively validates that all object properties are in required array
+   * @private
+   */
+  private validateAllFieldsRequiredRecursively(schema: any, schemaId: string, path: string[]): void {
+    if (schema && typeof schema === 'object') {
+      if (schema.type === 'object' && schema.properties) {
+        const properties = Object.keys(schema.properties);
+        const required = schema.required || [];
+        const missing = properties.filter(prop => !required.includes(prop));
+        
+        if (missing.length > 0) {
+          const schemaPath = path.length > 0 ? `${schemaId}.${path.join('.')}` : schemaId;
+          throw new ConfigurationError(
+            `Schema "${schemaPath}" has optional fields. All fields must be required for structured outputs.`,
+            {
+              schemaId,
+              schemaPath,
+              optionalFields: missing,
+              suggestion: 'Add optional fields to required array or use union type with null, e.g., {"type": ["string", "null"]}'
+            }
+          );
+        }
+        
+        // Recurse into properties
+        for (const [propName, propSchema] of Object.entries(schema.properties)) {
+          this.validateAllFieldsRequiredRecursively(propSchema, schemaId, [...path, 'properties', propName]);
+        }
+      }
+      
+      // Handle arrays
+      if (schema.type === 'array' && schema.items) {
+        this.validateAllFieldsRequiredRecursively(schema.items, schemaId, [...path, 'items']);
+      }
+      
+      // Handle oneOf/anyOf/allOf
+      const compositionTypes = ['oneOf', 'anyOf', 'allOf'];
+      for (const compositionType of compositionTypes) {
+        if (schema[compositionType] && Array.isArray(schema[compositionType])) {
+          schema[compositionType].forEach((subSchema: any, index: number) => {
+            this.validateAllFieldsRequiredRecursively(subSchema, schemaId, [...path, compositionType, index.toString()]);
+          });
         }
       }
     }

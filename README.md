@@ -397,10 +397,6 @@ If you see peer dependency warnings, make sure you're using compatible provider 
 - Anthropic: ^0.56.0
 - Google: ^1.8.0
 
-## License
-
-MIT
-
 ## Routing Rules with Weights & Tags
 
 Promptuna supports sophisticated routing logic out of the box. The snippet below shows how you can combine **tag-based rules**, **weight distributions**, and **phased rollouts** in a single prompt:

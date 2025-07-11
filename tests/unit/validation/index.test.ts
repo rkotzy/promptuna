@@ -48,9 +48,21 @@ describe('Validation Module', () => {
         },
       };
 
-      expect(() => validateConfig(configWithoutDefault)).toThrow(
-        'must have exactly one variant with default: true'
-      );
+      try {
+        validateConfig(configWithoutDefault);
+        expect.fail('Expected validation to throw');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ConfigurationError);
+        expect((error as ConfigurationError).message).toBe(
+          'Default variant validation failed'
+        );
+        const details = (error as any).details;
+        expect(details.errors).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining('Missing default variant'),
+          ])
+        );
+      }
     });
 
     it('should throw for invalid version format', () => {
@@ -59,9 +71,21 @@ describe('Validation Module', () => {
         version: 'invalid',
       };
 
-      expect(() => validateConfig(configWithBadVersion)).toThrow(
-        'Invalid version format'
-      );
+      try {
+        validateConfig(configWithBadVersion);
+        expect.fail('Expected validation to throw');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ConfigurationError);
+        expect((error as ConfigurationError).message).toContain(
+          'Invalid version format'
+        );
+        const details = (error as any).details;
+        expect(details.errors).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining('Invalid version format'),
+          ])
+        );
+      }
     });
   });
 

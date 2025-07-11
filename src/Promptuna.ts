@@ -1,7 +1,7 @@
 import { resolve } from 'path';
 import packageJson from '../package.json';
 import type { PromptunaObservability } from './observability/types';
-import { ConfigLoader } from './config/loader';
+import { loadAndValidateConfig } from './validation/index.js';
 import {
   PromptunaConfig,
   PromptunaRuntimeConfig,
@@ -30,7 +30,6 @@ import type { ProviderId } from './shared/types';
 
 export class Promptuna {
   protected configPath: string;
-  protected loader: ConfigLoader;
   protected templateProcessor: TemplateProcessor;
   protected config: PromptunaConfig | null = null;
   protected configPromise: Promise<PromptunaConfig> | null = null;
@@ -45,7 +44,6 @@ export class Promptuna {
   constructor(config: PromptunaRuntimeConfig) {
     this.runtimeConfig = config;
     this.configPath = resolve(config.configPath);
-    this.loader = new ConfigLoader();
     this.templateProcessor = new TemplateProcessor();
 
     this.sdkVersion = (packageJson as any).version ?? 'unknown';
@@ -68,12 +66,12 @@ export class Promptuna {
     }
 
     if (!this.configPromise) {
-      this.configPromise = this.loader
-        .loadConfigFile(this.configPath)
-        .then(config => {
+      this.configPromise = loadAndValidateConfig(this.configPath).then(
+        config => {
           this.config = config;
           return config;
-        });
+        }
+      );
     }
 
     return this.configPromise;

@@ -22,10 +22,8 @@ async function main() {
     // Optional: Full validation for CI/CD environments
     try {
       console.log('Running full validation...');
-      const { ConfigValidator } = await import('promptuna/validate');
-      await new ConfigValidator().validateAndLoadConfigFile(
-        './promptuna-example.json'
-      );
+      const { loadAndValidateConfig } = await import('promptuna/validate');
+      await loadAndValidateConfig('./promptuna-example.json');
       console.log('✅ Full validation passed');
     } catch (error: any) {
       console.log('❌ Full validation failed:', error.message);

@@ -1,7 +1,6 @@
 export { Promptuna } from './Promptuna.js';
 
 // Configuration
-export { ConfigLoader } from './config/index.js';
 export type {
   PromptunaConfig,
   PromptunaRuntimeConfig,

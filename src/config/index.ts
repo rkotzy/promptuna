@@ -1,4 +1,3 @@
-export { ConfigLoader } from './loader';
 export type {
   PromptunaConfig,
   PromptunaRuntimeConfig,

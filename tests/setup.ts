@@ -25,6 +25,30 @@ vi.mock('fs/promises', () => ({
   mkdir: vi.fn(),
 }));
 
+// Mock the compiled validator
+vi.mock('../src/validation/compiled-validator.js', () => {
+  const validator = function validate(data: any): boolean {
+    // Basic validation logic for tests
+    if (!data || typeof data !== 'object') return false;
+    if (!data.version || !data.providers || !data.prompts) {
+      validator.errors = [
+        {
+          instancePath: '/',
+          schemaPath: '#/required',
+          keyword: 'required',
+          params: { missingProperty: 'version/providers/prompts' },
+          message: 'must have required properties',
+        },
+      ];
+      return false;
+    }
+    validator.errors = null;
+    return true;
+  };
+  validator.errors = null;
+  return { default: validator };
+});
+
 // Mock path operations
 vi.mock('path', async () => {
   const actual = await vi.importActual('path');

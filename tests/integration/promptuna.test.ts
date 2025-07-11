@@ -27,7 +27,12 @@ describe('Promptuna Integration Tests', () => {
 
     // Mock fs.readFile to return our test config
     mockReadFile = vi.mocked(readFile);
-    mockReadFile.mockResolvedValue(JSON.stringify(testConfigs.valid));
+    mockReadFile.mockImplementation((path: string) => {
+      if (path === './test-config.json' || path === 'test-config.json') {
+        return Promise.resolve(JSON.stringify(testConfigs.valid));
+      }
+      return Promise.reject(new Error(`File not found: ${path}`));
+    });
 
     // Create Promptuna instance
     promptuna = new Promptuna({

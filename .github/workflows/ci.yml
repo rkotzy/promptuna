@@ -30,6 +30,9 @@ jobs:
       - name: Run linter
         run: npm run format:check
 
+      - name: Build project
+        run: npm run build
+
       - name: Run tests
         run: npm run test:coverage
 
@@ -40,9 +43,6 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
-
-      - name: Build project
-        run: npm run build
 
       - name: Archive test results
         uses: actions/upload-artifact@v4

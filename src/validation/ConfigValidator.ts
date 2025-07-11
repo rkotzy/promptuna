@@ -48,10 +48,17 @@ export class ConfigValidator {
 
       addFormats(ajvInstance as any);
       this.ajv = ajvInstance;
-    } catch {
-      throw new Error(
-        'ConfigValidator missing dependencies "ajv" and "ajv-formats".\n' +
-          'Install @promptuna/validate package and retry.'
+    } catch (error) {
+      // Surface missing-dependency problems through the same error
+      // channel as other configuration issues so callers can handle
+      // everything uniformly via `ConfigurationError`.
+      throw new ConfigurationError(
+        'Missing required runtime dependencies for configuration validation: "ajv" and "ajv-formats".\n' +
+          'Install the "@promptuna/validate" package (or add these packages manually) and retry.',
+        {
+          missingDependencies: ['ajv', 'ajv-formats'],
+          originalError: error instanceof Error ? error.message : error,
+        }
       );
     }
   }

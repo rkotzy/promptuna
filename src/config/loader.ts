@@ -1,4 +1,5 @@
 import { readFile } from 'fs/promises';
+import { Liquid } from 'liquidjs';
 import { PromptunaConfig, ConfigurationError, Variant } from './types';
 import {
   SUPPORTED_SCHEMA_VERSIONS,
@@ -155,8 +156,7 @@ export class ConfigLoader {
    * @private
    */
   private validateTemplates(config: PromptunaConfig): void {
-    // Import LiquidJS for template validation - same as ConfigValidator
-    const { Liquid } = require('liquidjs');
+    // Use LiquidJS for template validation
     const liquid = new Liquid({
       strictVariables: false,
       strictFilters: true, // Enable strict filters for validation

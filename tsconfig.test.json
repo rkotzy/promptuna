@@ -13,6 +13,11 @@
     "skipLibCheck": true,
     "lib": ["ES2020", "DOM"]
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    "validate/src/**/*",
+    "validate/**/__tests__/**/*"
+  ],
   "exclude": ["node_modules", "dist", "dist-test"]
 }

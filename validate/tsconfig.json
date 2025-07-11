@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.json", 
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "..",
+    "lib": ["ES2020"],
+    "moduleResolution": "node"
+  },
+  "include": ["src/**/*", "../src/validate/**/*", "../src/config/types.ts", "../src/templates/filters.ts", "../src/version.ts"]
+}

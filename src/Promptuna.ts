@@ -1,7 +1,7 @@
 import { resolve } from 'path';
 import packageJson from '../package.json';
 import type { PromptunaObservability } from './observability/types';
-import { ConfigLoader } from './config/loader.js';
+import { ConfigLoader } from './config/loader';
 import {
   PromptunaConfig,
   PromptunaRuntimeConfig,

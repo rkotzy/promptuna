@@ -22,9 +22,7 @@ async function main() {
     // Optional: Full validation for CI/CD environments
     try {
       console.log('Running full validation...');
-      const { ConfigValidator } = await import(
-        './src/validate/ConfigValidator.js'
-      );
+      const { ConfigValidator } = await import('promptuna/validate');
       await new ConfigValidator().validateAndLoadConfigFile(
         './promptuna-example.json'
       );
@@ -199,6 +197,9 @@ async function main() {
   } catch (error) {
     console.error('❌ Error occurred!');
     console.error('Error:', error instanceof Error ? error.message : error);
+    if (error instanceof Error && 'details' in error) {
+      console.error('Details:', (error as any).details);
+    }
 
     if (
       error instanceof Error &&

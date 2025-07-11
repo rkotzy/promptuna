@@ -1,8 +1,8 @@
-import Ajv from 'ajv/dist/2020';
-import addFormats from 'ajv-formats';
+import type AjvConstructor from 'ajv/dist/2020';
 import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { Liquid } from 'liquidjs';
 import {
   PromptunaConfig,
   ConfigurationError,
@@ -15,26 +15,45 @@ import {
 } from '../templates/filters';
 
 export class ConfigValidator {
-  private ajv: Ajv;
+  private ajv: any;
   private schemaPath: string;
   private validateFn: any = null;
   private initPromise: Promise<void> | null = null;
 
   constructor() {
-    this.ajv = new Ajv({
-      allErrors: true,
-      verbose: true,
-      strict: false,
-      addUsedSchema: false,
-    });
-    addFormats(this.ajv);
-    // Schema is at the root of the project
     this.schemaPath = resolve(
       dirname(fileURLToPath(import.meta.url)),
       '..',
       '..',
       'schema.json'
     );
+  }
+
+  /** Lazy-load AJV and ajv-formats only when the validator is used */
+  private async initAjv(): Promise<void> {
+    if (this.ajv) return;
+
+    try {
+      const [{ default: Ajv }, { default: addFormats }] = await Promise.all([
+        import('ajv/dist/2020'),
+        import('ajv-formats'),
+      ]);
+
+      const ajvInstance: AjvConstructor = new Ajv({
+        allErrors: true,
+        verbose: true,
+        strict: false,
+        addUsedSchema: false,
+      }) as unknown as AjvConstructor;
+
+      addFormats(ajvInstance as any);
+      this.ajv = ajvInstance;
+    } catch {
+      throw new Error(
+        'ConfigValidator missing dependencies "ajv" and "ajv-formats".\n' +
+          'Install @promptuna/validate package and retry.'
+      );
+    }
   }
 
   private async initializeValidator(): Promise<void> {
@@ -57,7 +76,10 @@ export class ConfigValidator {
     if (this.validateFn) return; // Already loaded
 
     if (!this.initPromise) {
-      this.initPromise = this.initializeValidator();
+      this.initPromise = (async () => {
+        await this.initAjv();
+        await this.initializeValidator();
+      })();
     }
 
     return this.initPromise;
@@ -177,7 +199,7 @@ export class ConfigValidator {
               `Invalid JSON Schema in responseSchemas["${schemaId}"]`,
               {
                 schemaId,
-                schemaErrors: this.ajv.errors.map(err => ({
+                schemaErrors: this.ajv.errors.map((err: any) => ({
                   message: err.message,
                   path: err.instancePath,
                   keyword: err.keyword,
@@ -570,8 +592,7 @@ export class ConfigValidator {
    * @private
    */
   private validateTemplates(config: PromptunaConfig): void {
-    // Import LiquidJS for template validation
-    const { Liquid } = require('liquidjs');
+    // Use LiquidJS for template validation
     const liquid = new Liquid({
       strictVariables: false,
       strictFilters: true, // Enable strict filters for validation

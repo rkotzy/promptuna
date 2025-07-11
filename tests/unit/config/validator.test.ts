@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ConfigValidator } from '../../../src/validate/ConfigValidator';
+import { ConfigValidator } from '../../../src/validation/ConfigValidator';
 import { ConfigurationError } from '../../../src/config/types';
 import { testConfigs } from '../../fixtures/test-utils';
 

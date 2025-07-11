@@ -11,16 +11,17 @@
       "types": "./dist/index.d.ts"
     },
     "./validate": {
-      "import": "./dist/validate/index.js",
-      "types": "./dist/validate/index.d.ts"
+      "import": "./dist/validation/index.js",
+      "types": "./dist/validation/index.d.ts"
     }
   },
   "bin": {
-    "promptuna-validate": "./dist/validate/cli.js"
+    "promptuna-validate": "./dist/validation/cli.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
+    "example": "tsx --env-file=.env example.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",

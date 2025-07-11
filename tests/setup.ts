@@ -27,7 +27,23 @@ vi.mock('fs/promises', () => ({
 
 // Mock the compiled validator
 vi.mock('../src/validation/compiled-validator.js', () => {
-  const validator = function validate(data: any): boolean {
+  interface ValidatorError {
+    instancePath: string;
+    schemaPath: string;
+    keyword: string;
+    params?: Record<string, any>;
+    message: string;
+    schema?: any;
+    parentSchema?: any;
+    data?: any;
+  }
+
+  interface ValidatorFunction {
+    (data: any, options?: any): boolean;
+    errors?: ValidatorError[] | null;
+  }
+
+  const validator: ValidatorFunction = function validate(data: any): boolean {
     // Basic validation logic for tests
     if (!data || typeof data !== 'object') return false;
     if (!data.version || !data.providers || !data.prompts) {

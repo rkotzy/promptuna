@@ -16,6 +16,104 @@ import {
 import validateSchema from './compiled-validator.js';
 
 /**
+ * Converts a JSON path to a human-readable location description
+ */
+function formatErrorPath(path: string): string {
+  if (!path || path === '/') return 'at the root level';
+
+  const parts = path.split('/').filter(Boolean);
+  const readable: string[] = [];
+
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    const nextPart = parts[i + 1];
+
+    if (part === 'prompts' && nextPart) {
+      readable.push(`in prompt "${nextPart}"`);
+      i++; // skip the next part since we consumed it
+    } else if (part === 'variants' && nextPart) {
+      readable.push(`variant "${nextPart}"`);
+      i++;
+    } else if (part === 'providers' && nextPart) {
+      readable.push(`in provider "${nextPart}"`);
+      i++;
+    } else if (part === 'messages' && nextPart) {
+      readable.push(`message ${parseInt(nextPart) + 1}`);
+      i++;
+    } else if (part === 'routing') {
+      readable.push('in routing configuration');
+    } else if (part === 'parameters') {
+      readable.push('in parameters');
+    } else {
+      readable.push(`field "${part}"`);
+    }
+  }
+
+  return readable.length > 0 ? readable.join(', ') : `at path ${path}`;
+}
+
+/**
+ * Translates technical AJV errors into user-friendly messages
+ */
+function translateSchemaError(error: any): string {
+  const location = formatErrorPath(error.instancePath);
+  const field = error.instancePath?.split('/').pop() || 'field';
+
+  switch (error.keyword) {
+    case 'required':
+      const missingProperty = error.params?.missingProperty;
+      if (missingProperty === 'version') {
+        return `❌ Missing required field: Your configuration must include a "version" field at the top level. Add: "version": "1.0.0"`;
+      } else if (missingProperty === 'providers') {
+        return `❌ Missing required field: Your configuration must include a "providers" section to define your LLM providers.`;
+      } else if (missingProperty === 'prompts') {
+        return `❌ Missing required field: Your configuration must include a "prompts" section to define your prompts.`;
+      } else if (missingProperty === 'type') {
+        return `❌ Missing provider type: ${location} must specify a "type" field. Use "openai", "anthropic", or "google".`;
+      } else if (missingProperty === 'provider') {
+        return `❌ Missing provider reference: ${location} must specify which "provider" to use.`;
+      } else if (missingProperty === 'model') {
+        return `❌ Missing model: ${location} must specify a "model" field (e.g., "gpt-4", "claude-3-5-sonnet-20241022").`;
+      } else if (missingProperty === 'messages') {
+        return `❌ Missing messages: ${location} must include a "messages" array with at least one message.`;
+      } else if (missingProperty === 'routing') {
+        return `❌ Missing routing: ${location} must include routing configuration with rules.`;
+      }
+      return `❌ Missing required field "${missingProperty}": ${location} is missing the required field "${missingProperty}".`;
+
+    case 'enum':
+      const allowedValues = error.params?.allowedValues;
+      if (allowedValues && field === 'type') {
+        return `❌ Invalid provider type: ${location} has an invalid type. Allowed values are: ${allowedValues.map((v: string) => `"${v}"`).join(', ')}.`;
+      }
+      return `❌ Invalid value: ${location} has an invalid value. Allowed values are: ${allowedValues?.map((v: string) => `"${v}"`).join(', ') || 'see documentation'}.`;
+
+    case 'additionalProperties':
+      const additionalProperty = error.params?.additionalProperty;
+      return `❌ Unknown field: Found unexpected field "${additionalProperty}" ${location}. Remove this field or check for typos.`;
+
+    case 'type':
+      const expectedType = error.schema?.type || 'correct type';
+      return `❌ Wrong data type: ${location} should be ${expectedType} but got ${typeof error.data}.`;
+
+    case 'pattern':
+      if (error.schemaPath?.includes('#/$defs/id')) {
+        return `❌ Invalid ID format: ${location} contains invalid characters. IDs can only contain letters, numbers, underscores, and hyphens.`;
+      }
+      return `❌ Invalid format: ${location} doesn't match the required pattern.`;
+
+    case 'minItems':
+      return `❌ Too few items: ${location} must have at least ${error.params?.limit} item(s).`;
+
+    case 'uniqueItems':
+      return `❌ Duplicate items: ${location} contains duplicate values, but all items must be unique.`;
+
+    default:
+      return `❌ Validation error: ${location} - ${error.message || 'Invalid configuration'}`;
+  }
+}
+
+/**
  * Sync validation function for already-loaded config data
  * @param config Raw config object to validate
  * @returns Validated PromptunaConfig object
@@ -26,17 +124,13 @@ export function validateConfig(config: unknown): PromptunaConfig {
   const isValid = validateSchema(config);
 
   if (!isValid) {
-    const errors = validateSchema.errors?.map((error: any) => ({
-      message: error.message || 'Unknown error',
-      path: error.instancePath || '/',
-      keyword: error.keyword || 'unknown',
-      allowedValues: error.params?.allowedValues,
-      missingProperty: error.params?.missingProperty,
-      additionalProperty: error.params?.additionalProperty,
-    }));
+    // Convert technical AJV errors into user-friendly messages
+    const userFriendlyErrors = validateSchema.errors?.map(
+      translateSchemaError
+    ) || ['Configuration validation failed with unknown errors'];
 
     throw new ConfigurationError('Configuration validation failed', {
-      errors,
+      errors: userFriendlyErrors,
       validationStage: 'schema',
     });
   }
@@ -90,8 +184,11 @@ function validateVersion(config: PromptunaConfig): void {
   const versionMatch = config.version.match(/^(\d+)\.(\d+)\.(\d+)$/);
   if (!versionMatch) {
     throw new ConfigurationError(
-      `Invalid version format: ${config.version}. Expected semantic version (e.g., "1.0.0")`,
+      `❌ Invalid version format: "${config.version}" is not a valid semantic version. Use format "X.Y.Z" like "1.0.0".`,
       {
+        errors: [
+          `❌ Invalid version format: "${config.version}" is not a valid semantic version. Use format "X.Y.Z" like "1.0.0".`,
+        ],
         version: config.version,
         expectedFormat: 'X.Y.Z (semantic versioning)',
       }
@@ -100,8 +197,11 @@ function validateVersion(config: PromptunaConfig): void {
 
   if (!isSchemaVersionSupported(config.version)) {
     throw new ConfigurationError(
-      `Unsupported schema version: ${config.version}. Supported versions: ${SUPPORTED_SCHEMA_VERSIONS.join(', ')}`,
+      `❌ Unsupported schema version: Version "${config.version}" is not supported by this SDK. Use one of: ${SUPPORTED_SCHEMA_VERSIONS.join(', ')}.`,
       {
+        errors: [
+          `❌ Unsupported schema version: Version "${config.version}" is not supported by this SDK. Use one of: ${SUPPORTED_SCHEMA_VERSIONS.join(', ')}.`,
+        ],
         version: config.version,
         supportedVersions: SUPPORTED_SCHEMA_VERSIONS,
       }
@@ -114,30 +214,38 @@ function validateVersion(config: PromptunaConfig): void {
  * @private
  */
 function validateDefaultVariants(config: PromptunaConfig): void {
+  const errors: string[] = [];
+
   for (const [promptId, prompt] of Object.entries(config.prompts)) {
     const defaultVariants = Object.entries(prompt.variants || {}).filter(
       ([_, variant]) => (variant as Variant).default === true
     );
 
     if (defaultVariants.length === 0) {
-      throw new ConfigurationError(
-        `Prompt "${promptId}" must have exactly one variant with default: true`,
-        {
-          promptId,
-          availableVariants: Object.keys(prompt.variants || {}),
-        }
-      );
+      const availableVariants = Object.keys(prompt.variants || {});
+      if (availableVariants.length === 1) {
+        errors.push(
+          `❌ Missing default variant: Prompt "${promptId}" needs a default variant. Add "default": true to variant "${availableVariants[0]}".`
+        );
+      } else {
+        errors.push(
+          `❌ Missing default variant: Prompt "${promptId}" must have exactly one variant with "default": true. Choose one of: ${availableVariants.join(', ')}.`
+        );
+      }
     }
 
     if (defaultVariants.length > 1) {
-      throw new ConfigurationError(
-        `Prompt "${promptId}" has multiple default variants. Only one variant can have default: true`,
-        {
-          promptId,
-          defaultVariants: defaultVariants.map(([id]) => id),
-        }
+      const defaultVariantIds = defaultVariants.map(([id]) => id);
+      errors.push(
+        `❌ Multiple default variants: Prompt "${promptId}" has ${defaultVariants.length} variants marked as default (${defaultVariantIds.join(', ')}). Only one variant can have "default": true.`
       );
     }
+  }
+
+  if (errors.length > 0) {
+    throw new ConfigurationError('Default variant validation failed', {
+      errors,
+    });
   }
 }
 
@@ -153,19 +261,23 @@ function validateRequiredParameters(config: PromptunaConfig): void {
     google: [],
   };
 
+  const errors: string[] = [];
+
   for (const [promptId, prompt] of Object.entries(config.prompts)) {
     for (const [variantId, variant] of Object.entries(prompt.variants)) {
       const provider = config.providers[variant.provider];
       if (!provider) {
-        throw new ConfigurationError(
-          `Variant "${variantId}" references non-existent provider "${variant.provider}"`,
-          {
-            promptId,
-            variantId,
-            invalidProvider: variant.provider,
-            availableProviders: Object.keys(config.providers),
-          }
-        );
+        const availableProviders = Object.keys(config.providers);
+        if (availableProviders.length === 0) {
+          errors.push(
+            `❌ Missing provider: Variant "${variantId}" in prompt "${promptId}" references provider "${variant.provider}", but no providers are defined. Add a providers section first.`
+          );
+        } else {
+          errors.push(
+            `❌ Invalid provider reference: Variant "${variantId}" in prompt "${promptId}" references non-existent provider "${variant.provider}". Available providers: ${availableProviders.join(', ')}.`
+          );
+        }
+        continue;
       }
 
       const needed = REQUIRED[provider.type] ?? [];
@@ -173,11 +285,23 @@ function validateRequiredParameters(config: PromptunaConfig): void {
       const missing = needed.filter(key => !(key in params));
 
       if (missing.length) {
-        throw new ConfigurationError(
-          `Variant "${variantId}" of prompt "${promptId}" is missing required parameter(s) for provider "${provider.type}": ${missing.join(', ')}`
-        );
+        if (provider.type === 'anthropic' && missing.includes('max_tokens')) {
+          errors.push(
+            `❌ Missing required parameter: Anthropic provider requires "max_tokens" parameter in variant "${variantId}" of prompt "${promptId}". Add "parameters": { "max_tokens": 1000 } or similar.`
+          );
+        } else {
+          errors.push(
+            `❌ Missing required parameters: Variant "${variantId}" in prompt "${promptId}" is missing required parameter(s) for provider type "${provider.type}": ${missing.join(', ')}.`
+          );
+        }
       }
     }
+  }
+
+  if (errors.length > 0) {
+    throw new ConfigurationError('Required parameter validation failed', {
+      errors,
+    });
   }
 }
 
@@ -195,6 +319,8 @@ function validateTemplates(config: PromptunaConfig): void {
   // Register custom filters to match TemplateProcessor
   registerCustomFilters(liquid);
 
+  const errors: string[] = [];
+
   for (const [promptId, prompt] of Object.entries(config.prompts)) {
     for (const [variantId, variant] of Object.entries(prompt.variants)) {
       const typedVariant = variant as Variant;
@@ -206,22 +332,22 @@ function validateTemplates(config: PromptunaConfig): void {
               // Parse the template to validate syntax
               liquid.parse(message.content.template);
             } catch (error: any) {
-              throw new ConfigurationError(
-                `Template syntax error in prompt "${promptId}", variant "${variantId}", message ${messageIndex}: ${error.message}`,
-                {
-                  promptId,
-                  variantId,
-                  messageIndex,
-                  template: message.content.template,
-                  error: error.message,
-                  suggestion: getTemplateSuggestion(error.message),
-                }
+              const suggestion = getTemplateSuggestion(error.message);
+              const suggestionText = suggestion
+                ? ` Suggestion: ${suggestion}`
+                : '';
+              errors.push(
+                `❌ Template syntax error in prompt "${promptId}", variant "${variantId}", message ${messageIndex + 1}: ${error.message}.${suggestionText}`
               );
             }
           }
         }
       }
     }
+  }
+
+  if (errors.length > 0) {
+    throw new ConfigurationError('Template validation failed', { errors });
   }
 }
 
